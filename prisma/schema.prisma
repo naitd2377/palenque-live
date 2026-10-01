@@ -1,0 +1,57 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  name      String
+  phone     String?
+  password  String
+  role      String   @default("CLIENT") // ADMIN | CLIENT
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  purchases Purchase[]
+}
+
+model Event {
+  id          String   @id @default(cuid())
+  title       String
+  description String
+  eventDate   DateTime
+  price       Float
+  currency    String   @default("MXN")
+  streamUrl   String?  // HLS .m3u8 URL pública
+  streamKey   String?  // clave RTMP para el broadcaster
+  rtmpUrl     String?  // servidor RTMP destino
+  coverColor  String   @default("#b91c1c")
+  status      String   @default("UPCOMING") // UPCOMING | LIVE | ENDED | CANCELLED
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  purchases Purchase[]
+}
+
+model Purchase {
+  id        String   @id @default(cuid())
+  userId    String
+  eventId   String
+  amount    Float
+  currency  String   @default("MXN")
+  status    String   @default("PAID") // PAID | REFUNDED
+  createdAt DateTime @default(now())
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  event     Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, eventId])
+}
