@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
-import { hashPassword, createSessionToken, setSession, SESSION_COOKIE } from '@/lib/auth'
+import { hashPassword, createSessionToken, SESSION_COOKIE } from '@/lib/auth'
 
 export async function POST(req: NextRequest) {
   const body = await req.json().catch(() => ({} as any))
@@ -40,8 +40,7 @@ export async function POST(req: NextRequest) {
     select: { id: true, email: true, name: true, role: true, phone: true },
   })
 
-  const token = createSessionToken()
-  setSession(token, { userId: user.id, role: user.role })
+  const token = createSessionToken(user.id)
 
   const res = NextResponse.json({ user })
   res.cookies.set(SESSION_COOKIE, token, {
@@ -49,6 +48,7 @@ export async function POST(req: NextRequest) {
     sameSite: 'lax',
     path: '/',
     maxAge: 60 * 60 * 24 * 7,
+    secure: process.env.NODE_ENV === 'production',
   })
   return res
 }
