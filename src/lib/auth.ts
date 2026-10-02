@@ -1,4 +1,4 @@
-import { scryptSync, randomBytes, timingSafeEqual } from 'crypto'
+import { scryptSync, randomBytes, timingSafeEqual, createHmac } from 'crypto'
 
 /**
  * Hash a password using scrypt (Node built-in, no extra deps).
@@ -23,36 +23,61 @@ export function verifyPassword(password: string, stored: string): boolean {
 }
 
 /**
- * Create a simple session token (random hex).
- * In production you'd use JWT with a secret, but this works for our private platform.
- */
-export function createSessionToken(): string {
-  return randomBytes(32).toString('hex')
-}
-
-/**
  * Session cookie name.
  */
 export const SESSION_COOKIE = 'palenque_session'
 
 /**
- * Simple in-memory session store.
- * token -> { userId, role, createdAt }
- * (Resets on server restart — fine for a small private platform.
- *  For production with persistence, swap with a DB-backed sessions table.)
+ * JWT-like session token (stateless).
+ *
+ * Format: "payload.signature"
+ * - payload = base64url(JSON { uid, iat })
+ * - signature = HMAC-SHA256(payload, SESSION_SECRET)
+ *
+ * Stateless = works on Vercel serverless where in-memory state is lost
+ * between invocations. We do NOT store role in the token — instead, we
+ * look it up in the DB on every request so role changes take effect
+ * immediately on next request.
  */
-const sessions = new Map<string, { userId: string; role: string; createdAt: number }>()
+const SESSION_SECRET = process.env.SESSION_SECRET || 'palenque-live-dev-secret-change-me'
 
-export function setSession(token: string, data: { userId: string; role: string }) {
-  sessions.set(token, { ...data, createdAt: Date.now() })
+function base64url(input: string | Buffer): string {
+  const buf = typeof input === 'string' ? Buffer.from(input) : input
+  return buf.toString('base64').replace(/=/g, '').replace(/\+/g, '-').replace(/\//g, '_')
 }
 
-export function getSession(token: string | undefined | null) {
+function base64urlDecode(input: string): Buffer {
+  const padded = input.replace(/-/g, '+').replace(/_/g, '/')
+  return Buffer.from(padded, 'base64')
+}
+
+function sign(payload: string): string {
+  return createHmac('sha256', SESSION_SECRET).update(payload).digest('hex')
+}
+
+export function createSessionToken(userId: string): string {
+  const payload = base64url(JSON.stringify({ uid: userId, iat: Date.now() }))
+  const signature = sign(payload)
+  return `${payload}.${signature}`
+}
+
+export function verifySessionToken(token: string | undefined | null): { userId: string } | null {
   if (!token) return null
-  return sessions.get(token) ?? null
-}
-
-export function clearSession(token: string | undefined | null) {
-  if (!token) return
-  sessions.delete(token)
+  const parts = token.split('.')
+  if (parts.length !== 2) return null
+  const [payload, signature] = parts
+  const expectedSig = sign(payload)
+  if (signature.length !== expectedSig.length) return null
+  try {
+    if (!timingSafeEqual(Buffer.from(signature), Buffer.from(expectedSig))) return null
+  } catch {
+    return null
+  }
+  try {
+    const decoded = JSON.parse(base64urlDecode(payload).toString())
+    if (!decoded.uid) return null
+    return { userId: decoded.uid }
+  } catch {
+    return null
+  }
 }
