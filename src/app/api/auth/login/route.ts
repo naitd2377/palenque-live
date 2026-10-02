@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
-import { verifyPassword, createSessionToken, setSession, SESSION_COOKIE } from '@/lib/auth'
+import { verifyPassword, createSessionToken, SESSION_COOKIE } from '@/lib/auth'
 
 export async function POST(req: NextRequest) {
   const body = await req.json().catch(() => ({} as any))
@@ -17,8 +17,8 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Credenciales incorrectas' }, { status: 401 })
   }
 
-  const token = createSessionToken()
-  setSession(token, { userId: user.id, role: user.role })
+  // Stateless JWT-like token: only stores userId. Role is read from DB on each request.
+  const token = createSessionToken(user.id)
 
   const res = NextResponse.json({
     user: { id: user.id, email: user.email, name: user.name, role: user.role, phone: user.phone },
@@ -27,7 +27,8 @@ export async function POST(req: NextRequest) {
     httpOnly: true,
     sameSite: 'lax',
     path: '/',
-    maxAge: 60 * 60 * 24 * 7,
+    maxAge: 60 * 60 * 24 * 7, // 7 days
+    secure: process.env.NODE_ENV === 'production',
   })
   return res
 }
