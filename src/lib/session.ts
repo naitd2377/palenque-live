@@ -1,6 +1,6 @@
 import { NextRequest } from 'next/server'
 import { db } from '@/lib/db'
-import { getSession, SESSION_COOKIE } from '@/lib/auth'
+import { verifySessionToken, SESSION_COOKIE } from '@/lib/auth'
 
 export type CurrentUser = {
   id: string
@@ -11,14 +11,20 @@ export type CurrentUser = {
 }
 
 /**
- * Read session cookie and return the matching user (or null).
+ * Read session cookie, verify the token, and look up the user in the DB.
+ *
+ * IMPORTANT: We do NOT trust any role/identity stored in the token —
+ * we always fetch the current state from the DB so that changes
+ * (e.g. promoting a user to ADMIN via SQL) take effect immediately.
+ *
+ * This is stateless and works correctly on Vercel serverless.
  */
 export async function getCurrentUser(req: NextRequest): Promise<CurrentUser | null> {
   const token = req.cookies.get(SESSION_COOKIE)?.value
-  const session = getSession(token)
-  if (!session) return null
+  const sessionData = verifySessionToken(token)
+  if (!sessionData) return null
   const user = await db.user.findUnique({
-    where: { id: session.userId },
+    where: { id: sessionData.userId },
     select: { id: true, email: true, name: true, role: true, phone: true },
   })
   return user
