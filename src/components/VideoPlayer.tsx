@@ -19,28 +19,29 @@ export function VideoPlayer({ src, poster, autoPlay = false, className }: Props)
   const videoRef = useRef<HTMLVideoElement>(null)
   const [status, setStatus] = useState<'loading' | 'playing' | 'error'>('loading')
   const [errorMsg, setErrorMsg] = useState<string>('')
-
-  // Reset status when src changes (render-phase setState keyed by src).
-  // Using `key`-style state derivation avoids the lint warning about
-  // calling setState inside useEffect.
-  const [lastSrc, setLastSrc] = useState<string>(src)
-  if (src !== lastSrc) {
-    setLastSrc(src)
-    setStatus('loading')
-    setErrorMsg('')
-  }
+  const hlsRef = useRef<Hls | null>(null)
 
   useEffect(() => {
     const video = videoRef.current
     if (!video || !src) return
 
-    // Non-HLS source -> just use the video element directly
-    if (!src.endsWith('.m3u8') && !src.includes('.m3u8')) {
+    // Clean up any previous HLS instance
+    if (hlsRef.current) {
+      hlsRef.current.destroy()
+      hlsRef.current = null
+    }
+
+    // Reset state
+    setStatus('loading')
+    setErrorMsg('')
+
+    // Non-HLS source -> use video element directly
+    if (!src.includes('.m3u8')) {
       video.src = src
       const onLoaded = () => setStatus('playing')
       const onError = () => {
         setStatus('error')
-        setErrorMsg('No se pudo cargar el video. Verifica la URL.')
+        setErrorMsg('No se pudo cargar el video.')
       }
       video.addEventListener('loadeddata', onLoaded)
       video.addEventListener('error', onError)
@@ -68,29 +69,63 @@ export function VideoPlayer({ src, poster, autoPlay = false, className }: Props)
       }
     }
 
-    // HLS via hls.js (Chrome, Firefox, etc.)
+    // HLS via hls.js (Chrome, Firefox, Edge)
     if (Hls.isSupported()) {
-      const hls = new Hls({ enableWorker: true, lowLatencyMode: true })
+      const hls = new Hls({
+        enableWorker: true,
+        lowLatencyMode: true,
+        backBufferLength: 90,
+        maxBufferLength: 30,
+        maxMaxBufferLength: 60,
+        liveDurationInfinity: true,
+        liveBackBufferLength: 30,
+      })
+      hlsRef.current = hls
+
       hls.loadSource(src)
       hls.attachMedia(video)
-      hls.on(Hls.Events.MANIFEST_PARSED, () => setStatus('playing'))
-      hls.on(Hls.Events.ERROR, (_e, data) => {
+
+      hls.on(Hls.Events.MANIFEST_PARSED, () => {
+        console.log('✅ HLS manifest parsed, attempting playback')
+        video.play().catch((e) => {
+          console.warn('Autoplay blocked:', e)
+        })
+        setStatus('playing')
+      })
+
+      hls.on(Hls.Events.ERROR, (_event, data) => {
+        console.error('❌ HLS error:', data)
         if (data.fatal) {
-          setStatus('error')
-          setErrorMsg(`Error de transmisión: ${data.details ?? data.type}`)
+          switch (data.type) {
+            case Hls.ErrorTypes.NETWORK_ERROR:
+              // Try to recover network error
+              console.log('🔄 Trying to recover network error...')
+              hls.startLoad()
+              break
+            case Hls.ErrorTypes.MEDIA_ERROR:
+              // Try to recover media error
+              console.log('🔄 Trying to recover media error...')
+              hls.recoverMediaError()
+              break
+            default:
+              // Cannot recover
+              setStatus('error')
+              setErrorMsg(`Error de transmisión: ${data.details ?? data.type}`)
+              hls.destroy()
+              break
+          }
         }
       })
+
       return () => {
         hls.destroy()
+        hlsRef.current = null
       }
     }
 
-    // Last-resort fallback — defer to a microtask to avoid the lint warning
-    // about calling setState synchronously inside an effect.
-    Promise.resolve().then(() => {
-      setStatus('error')
-      setErrorMsg('Tu navegador no soporta HLS.')
-    })
+    // Last-resort fallback
+    setStatus('error')
+    setErrorMsg('Tu navegador no soporta HLS.')
   }, [src])
 
   return (
