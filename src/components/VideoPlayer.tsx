@@ -10,11 +10,6 @@ type Props = {
   className?: string
 }
 
-/**
- * HLS-capable HTML5 video player.
- * - Safari/iOS plays HLS natively, hls.js handles Chrome/Firefox.
- * - Falls back to native video for non-HLS sources (mp4, webm).
- */
 export function VideoPlayer({ src, poster, autoPlay = false, className }: Props) {
   const videoRef = useRef<HTMLVideoElement>(null)
   const [status, setStatus] = useState<'loading' | 'playing' | 'error'>('loading')
@@ -25,17 +20,14 @@ export function VideoPlayer({ src, poster, autoPlay = false, className }: Props)
     const video = videoRef.current
     if (!video || !src) return
 
-    // Clean up any previous HLS instance
     if (hlsRef.current) {
       hlsRef.current.destroy()
       hlsRef.current = null
     }
 
-    // Reset state
     setStatus('loading')
     setErrorMsg('')
 
-    // Non-HLS source -> use video element directly
     if (!src.includes('.m3u8')) {
       video.src = src
       const onLoaded = () => setStatus('playing')
@@ -52,7 +44,6 @@ export function VideoPlayer({ src, poster, autoPlay = false, className }: Props)
       }
     }
 
-    // HLS — Safari supports natively
     if (video.canPlayType('application/vnd.apple.mpegurl')) {
       video.src = src
       const onLoaded = () => setStatus('playing')
@@ -69,7 +60,6 @@ export function VideoPlayer({ src, poster, autoPlay = false, className }: Props)
       }
     }
 
-    // HLS via hls.js (Chrome, Firefox, Edge)
     if (Hls.isSupported()) {
       const hls = new Hls({
         enableWorker: true,
@@ -98,17 +88,14 @@ export function VideoPlayer({ src, poster, autoPlay = false, className }: Props)
         if (data.fatal) {
           switch (data.type) {
             case Hls.ErrorTypes.NETWORK_ERROR:
-              // Try to recover network error
               console.log('🔄 Trying to recover network error...')
               hls.startLoad()
               break
             case Hls.ErrorTypes.MEDIA_ERROR:
-              // Try to recover media error
               console.log('🔄 Trying to recover media error...')
               hls.recoverMediaError()
               break
             default:
-              // Cannot recover
               setStatus('error')
               setErrorMsg(`Error de transmisión: ${data.details ?? data.type}`)
               hls.destroy()
@@ -123,7 +110,6 @@ export function VideoPlayer({ src, poster, autoPlay = false, className }: Props)
       }
     }
 
-    // Last-resort fallback
     setStatus('error')
     setErrorMsg('Tu navegador no soporta HLS.')
   }, [src])
