@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { Radio, Calendar, Ticket, Shield, BookOpen, ArrowRight, Sparkles, Lock, Play, Clock, Users } from 'lucide-react'
+import { Radio, Calendar, Ticket, BookOpen, ArrowRight, Sparkles, Lock, Play, Clock, Users, UserPlus, CreditCard, Eye } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -59,16 +59,16 @@ export function HomeView() {
         <div className="relative z-10 max-w-3xl">
           <div className="mb-4 inline-flex items-center gap-2 rounded-full bg-white/10 px-3 py-1 text-xs font-medium backdrop-blur">
             <Sparkles className="h-3 w-3" />
-            Plataforma privada de streaming
+            Transmisiones en vivo de tu palenque favorito
           </div>
           <h1 className="mb-4 text-4xl font-black leading-tight sm:text-6xl">
             Tu palenque,<br />
-            <span className="text-amber-300">en vivo</span> y para tus clientes.
+            <span className="text-amber-300">en vivo</span> desde donde estés.
           </h1>
           <p className="mb-8 max-w-2xl text-base text-white/80 sm:text-lg">
-            Transmite tus eventos desde el celular, cobra por acceso y mantén el control
-            total de quién ve cada transmisión. Sin Facebook, sin Telegram, sin riesgos
-            de que te cierren la cuenta.
+            Regístrate, compra tu acceso y disfruta las peleas en tiempo real
+            desde tu celular o computadora. Calidad HD, sin restricciones,
+            sin depender de redes sociales.
           </p>
           <div className="flex flex-wrap gap-3">
             <Button
@@ -76,7 +76,7 @@ export function HomeView() {
               className="bg-amber-500 text-stone-900 hover:bg-amber-400"
               onClick={() => (user ? setView({ name: 'events' }) : openAuth('register'))}
             >
-              {user ? 'Ver eventos' : 'Crear cuenta gratis'}
+              {user ? 'Ver eventos' : 'Crear mi cuenta gratis'}
               <ArrowRight className="ml-2 h-4 w-4" />
             </Button>
             <Button
@@ -86,7 +86,7 @@ export function HomeView() {
               onClick={() => setView({ name: 'guide' })}
             >
               <BookOpen className="mr-2 h-4 w-4" />
-              Cómo transmitir
+              Cómo ver las transmisiones
             </Button>
           </div>
         </div>
@@ -98,7 +98,7 @@ export function HomeView() {
           { icon: <Radio className="h-5 w-5" />, label: 'Eventos en vivo', value: liveEvents.length, color: 'text-red-600' },
           { icon: <Calendar className="h-5 w-5" />, label: 'Próximos eventos', value: upcomingEvents.length, color: 'text-amber-600' },
           { icon: <Lock className="h-5 w-5" />, label: 'Acceso privado', value: '100%', color: 'text-stone-700' },
-          { icon: <Users className="h-5 w-5" />, label: 'Solo tus clientes', value: '✓', color: 'text-stone-700' },
+          { icon: <Users className="h-5 w-5" />, label: 'Para clientes', value: '✓', color: 'text-stone-700' },
         ].map((s, i) => (
           <Card key={i} className="border-border/60">
             <CardContent className="p-4">
@@ -169,28 +169,31 @@ export function HomeView() {
         )}
       </section>
 
-      {/* HOW IT WORKS */}
+      {/* HOW IT WORKS — orientado al CLIENTE */}
       <section className="mt-16">
-        <h2 className="mb-6 text-center text-2xl font-bold sm:text-3xl">Cómo funciona</h2>
+        <h2 className="mb-2 text-center text-2xl font-bold sm:text-3xl">Cómo disfrutar las transmisiones</h2>
+        <p className="mb-6 text-center text-muted-foreground">
+          Solo 3 pasos para ver tu primer evento en vivo
+        </p>
         <div className="grid gap-6 md:grid-cols-3">
           {[
             {
               n: 1,
-              title: 'Crea el evento',
-              desc: 'Desde tu panel de administrador defines fecha, precio y descripción. Se publica automáticamente para tus clientes.',
-              icon: <Calendar className="h-6 w-6" />,
+              title: 'Crea tu cuenta',
+              desc: 'Regístrate gratis con tu correo. Solo necesitas un nombre y una contraseña. Sin tarjetas, sin compromisos.',
+              icon: <UserPlus className="h-6 w-6" />,
             },
             {
               n: 2,
-              title: 'Transmite desde tu celular',
-              desc: 'Usa la app Larix Broadcaster (gratis) en tu celular para enviar video en vivo al servidor RTMP. Tu laptop solo es para administrar.',
-              icon: <Radio className="h-6 w-6" />,
+              title: 'Compra tu acceso',
+              desc: 'Elige el evento que quieras ver y paga con tarjeta de crédito/débito de forma segura a través de Stripe. Pago único por evento.',
+              icon: <CreditCard className="h-6 w-6" />,
             },
             {
               n: 3,
-              title: 'Tus clientes compran y ven',
-              desc: 'Cada cliente se registra, paga el acceso al evento con tarjeta y ve la transmisión en HD desde su navegador. Tú cobras y controlas.',
-              icon: <Ticket className="h-6 w-6" />,
+              title: 'Disfruta en vivo',
+              desc: 'El día del evento, entra a "Mis tickets", abre el stream y disfruta la transmisión en HD desde tu celular, tablet o computadora.',
+              icon: <Eye className="h-6 w-6" />,
             },
           ].map((step) => (
             <Card key={step.n} className="border-border/60">
@@ -214,13 +217,13 @@ export function HomeView() {
       {/* CTA */}
       {!user && (
         <section className="mt-16 rounded-3xl bg-stone-100 p-8 text-center sm:p-12">
-          <h2 className="mb-3 text-2xl font-bold sm:text-3xl">¿Listo para empezar?</h2>
+          <h2 className="mb-3 text-2xl font-bold sm:text-3xl">¿Listo para ver tu primer evento?</h2>
           <p className="mb-6 text-muted-foreground">
-            Crea tu cuenta y empieza a transmitir tus eventos hoy mismo.
+            Crea tu cuenta gratis hoy y entérate de los próximos eventos.
           </p>
           <div className="flex flex-wrap justify-center gap-3">
             <Button size="lg" className="bg-red-700 hover:bg-red-800" onClick={() => openAuth('register')}>
-              Crear cuenta gratis
+              Crear mi cuenta gratis
             </Button>
             <Button size="lg" variant="outline" onClick={() => openAuth('login')}>
               Ya tengo cuenta
