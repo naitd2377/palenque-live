@@ -54,22 +54,29 @@ export function EventsView() {
       search.trim() === '' ? true : (e.title + ' ' + e.description).toLowerCase().includes(search.toLowerCase()),
     )
 
-  async function buy(event: EventItem) {
+   async function buy(event: EventItem) {
     if (!user) {
       openAuth('register')
       return
     }
+    setBuyingId(event.id)
     try {
-      const res = await fetch(`/api/events/${event.id}/purchase`, { method: 'POST' })
+      const res = await fetch('/api/checkout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ eventId: event.id }),
+      })
       const data = await res.json()
       if (!res.ok) {
-        toast.error(data.error ?? 'Error al comprar')
+        toast.error(data.error ?? 'Error al crear la sesión de pago')
         return
       }
-      toast.success('¡Acceso comprado!')
-      setView({ name: 'event', eventId: event.id })
+      // Redirigir a Stripe
+      window.location.href = data.url
     } catch {
       toast.error('Error de red')
+    } finally {
+      setBuyingId(null)
     }
   }
 
