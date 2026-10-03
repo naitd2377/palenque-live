@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
 import { VideoPlayer } from './VideoPlayer'
+import { ChatBox } from './ChatBox'
 import { useApp } from '@/lib/store'
 import { toast } from 'sonner'
 
@@ -56,17 +57,17 @@ export function EventView({ eventId }: { eventId: string }) {
     }
     setBuying(true)
     try {
-      const res = await fetch(`/api/events/${eventId}/purchase`, { method: 'POST' })
+      const res = await fetch('/api/checkout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ eventId }),
+      })
       const data = await res.json()
       if (!res.ok) {
-        toast.error(data.error ?? 'Error al comprar')
+        toast.error(data.error ?? 'Error al crear la sesión de pago')
         return
       }
-      toast.success('¡Acceso comprado!')
-      // Re-fetch to reveal streamUrl
-      const refetch = await fetch(`/api/events/${eventId}`, { cache: 'no-store' })
-      const rdata = await refetch.json()
-      setEvent(rdata.event)
+      window.location.href = data.url
     } catch {
       toast.error('Error de red')
     } finally {
@@ -112,60 +113,70 @@ export function EventView({ eventId }: { eventId: string }) {
   const hasStream = !!event.streamUrl
 
   return (
-    <div className="mx-auto max-w-5xl px-4 py-8">
+    <div className="mx-auto max-w-7xl px-4 py-8">
       <Button variant="ghost" size="sm" onClick={() => setView({ name: 'events' })} className="mb-4">
         <ArrowLeft className="mr-2 h-4 w-4" /> Volver a eventos
       </Button>
 
-      {/* Player area */}
-      <div className="mb-4">
-        {canWatch && hasStream ? (
-          <VideoPlayer src={event.streamUrl!} autoPlay className="shadow-xl" />
-        ) : canWatch && !hasStream ? (
-          <div
-            className="flex aspect-video w-full flex-col items-center justify-center rounded-xl text-white"
-            style={{ background: `linear-gradient(135deg, ${event.coverColor} 0%, #1c1917 100%)` }}
-          >
-            <Radio className="mb-3 h-12 w-12 animate-pulse" />
-            <p className="text-xl font-semibold">Transmisión no disponible aún</p>
-            <p className="mt-1 text-sm text-white/70">
-              {event.status === 'UPCOMING'
-                ? `El evento inicia el ${dateStr} a las ${timeStr}`
-                : 'El administrador aún no configura la URL del stream.'}
-            </p>
-          </div>
-        ) : (
-          <div
-            className="relative flex aspect-video w-full flex-col items-center justify-center overflow-hidden rounded-xl text-white"
-            style={{ background: `linear-gradient(135deg, ${event.coverColor} 0%, #1c1917 100%)` }}
-          >
-            <div className="absolute inset-0 opacity-10" style={{
-              backgroundImage: 'radial-gradient(circle at 50% 50%, white 1px, transparent 1px)',
-              backgroundSize: '24px 24px',
-            }} />
-            <Lock className="mb-3 h-12 w-12" />
-            <p className="text-xl font-semibold">Contenido bloqueado</p>
-            <p className="mt-1 max-w-md text-center text-sm text-white/70">
-              Compra acceso a este evento para ver la transmisión en vivo.
-            </p>
-            <Button
-              size="lg"
-              className="mt-5 bg-amber-500 text-stone-900 hover:bg-amber-400"
-              disabled={buying || event.status === 'ENDED'}
-              onClick={buy}
+      {/* Layout: video + chat side by side on desktop */}
+      <div className="grid gap-4 lg:grid-cols-[2fr_1fr]">
+        {/* Player area */}
+        <div>
+          {canWatch && hasStream ? (
+            <VideoPlayer src={event.streamUrl!} autoPlay className="shadow-xl" />
+          ) : canWatch && !hasStream ? (
+            <div
+              className="flex aspect-video w-full flex-col items-center justify-center rounded-xl text-white"
+              style={{ background: `linear-gradient(135deg, ${event.coverColor} 0%, #1c1917 100%)` }}
             >
-              {buying
-                ? 'Procesando…'
-                : event.status === 'ENDED'
-                  ? 'Evento finalizado'
-                  : `Comprar acceso — $${event.price.toFixed(0)} ${event.currency}`}
-            </Button>
+              <Radio className="mb-3 h-12 w-12 animate-pulse" />
+              <p className="text-xl font-semibold">Transmisión no disponible aún</p>
+              <p className="mt-1 text-sm text-white/70">
+                {event.status === 'UPCOMING'
+                  ? `El evento inicia el ${dateStr} a las ${timeStr}`
+                  : 'El administrador aún no configura la URL del stream.'}
+              </p>
+            </div>
+          ) : (
+            <div
+              className="relative flex aspect-video w-full flex-col items-center justify-center overflow-hidden rounded-xl text-white"
+              style={{ background: `linear-gradient(135deg, ${event.coverColor} 0%, #1c1917 100%)` }}
+            >
+              <div className="absolute inset-0 opacity-10" style={{
+                backgroundImage: 'radial-gradient(circle at 50% 50%, white 1px, transparent 1px)',
+                backgroundSize: '24px 24px',
+              }} />
+              <Lock className="mb-3 h-12 w-12" />
+              <p className="text-xl font-semibold">Contenido bloqueado</p>
+              <p className="mt-1 max-w-md text-center text-sm text-white/70">
+                Compra acceso a este evento para ver la transmisión en vivo y participar del chat.
+              </p>
+              <Button
+                size="lg"
+                className="mt-5 bg-amber-500 text-stone-900 hover:bg-amber-400"
+                disabled={buying || event.status === 'ENDED'}
+                onClick={buy}
+              >
+                {buying
+                  ? 'Redirigiendo…'
+                  : event.status === 'ENDED'
+                    ? 'Evento finalizado'
+                    : `Comprar acceso — $${event.price.toFixed(0)} ${event.currency}`}
+              </Button>
+            </div>
+          )}
+        </div>
+
+        {/* Chat (solo visible si tiene acceso) */}
+        {canWatch && hasStream && (
+          <div className="lg:h-full">
+            <ChatBox eventId={event.id} />
           </div>
         )}
       </div>
 
       {/* Event info */}
-      <Card className="border-border/60">
+      <Card className="border-border/60 mt-6">
         <CardHeader>
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div>
