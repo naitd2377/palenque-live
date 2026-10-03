@@ -29,6 +29,7 @@ export function EventsView() {
   const [loading, setLoading] = useState(true)
   const [filter, setFilter] = useState<'all' | 'LIVE' | 'UPCOMING' | 'ENDED'>('all')
   const [search, setSearch] = useState('')
+  const [buyingId, setBuyingId] = useState<string | null>(null)
 
   useEffect(() => {
     let cancelled = false
@@ -54,7 +55,7 @@ export function EventsView() {
       search.trim() === '' ? true : (e.title + ' ' + e.description).toLowerCase().includes(search.toLowerCase()),
     )
 
-   async function buy(event: EventItem) {
+  async function buy(event: EventItem) {
     if (!user) {
       openAuth('register')
       return
@@ -190,8 +191,13 @@ export function EventsView() {
                       Finalizado
                     </Button>
                   ) : (
-                    <Button size="sm" className="bg-red-700 hover:bg-red-800" onClick={() => buy(e)}>
-                      Comprar
+                    <Button
+                      size="sm"
+                      className="bg-red-700 hover:bg-red-800"
+                      disabled={buyingId === e.id}
+                      onClick={() => buy(e)}
+                    >
+                      {buyingId === e.id ? 'Redirigiendo...' : 'Comprar'}
                     </Button>
                   )}
                 </CardFooter>
