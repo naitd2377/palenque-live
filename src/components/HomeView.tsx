@@ -189,7 +189,7 @@ export function HomeView() {
             {
               n: 3,
               title: 'Tus clientes compran y ven',
-              desc: 'Cada cliente se registra, paga el acceso al evento y ve la transmisión en HD desde su navegador. Tú cobras y controlas.',
+              desc: 'Cada cliente se registra, paga el acceso al evento con tarjeta y ve la transmisión en HD desde su navegador. Tú cobras y controlas.',
               icon: <Ticket className="h-6 w-6" />,
             },
           ].map((step) => (
@@ -253,14 +253,17 @@ function EventCard({ event }: { event: EventItem }) {
     }
     setBuying(true)
     try {
-      const res = await fetch(`/api/events/${event.id}/purchase`, { method: 'POST' })
+      const res = await fetch('/api/checkout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ eventId: event.id }),
+      })
       const data = await res.json()
       if (!res.ok) {
-        toast.error(data.error ?? 'Error al comprar')
+        toast.error(data.error ?? 'Error al crear la sesión de pago')
         return
       }
-      toast.success('¡Acceso comprado! Ya puedes ver la transmisión.')
-      setView({ name: 'event', eventId: event.id })
+      window.location.href = data.url
     } catch {
       toast.error('Error de red')
     } finally {
@@ -314,7 +317,7 @@ function EventCard({ event }: { event: EventItem }) {
           </Button>
         ) : (
           <Button size="sm" className="bg-red-700 hover:bg-red-800" disabled={buying} onClick={buy}>
-            {buying ? 'Procesando…' : 'Comprar acceso'}
+            {buying ? 'Redirigiendo…' : 'Comprar acceso'}
           </Button>
         )}
       </CardFooter>
