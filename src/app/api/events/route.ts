@@ -31,7 +31,7 @@ export async function GET(req: NextRequest) {
   const result = events.map((e) => {
     const purchased = purchasedSet.has(e.id)
     const isOwner = user?.role === 'ADMIN'
-    return {
+        return {
       id: e.id,
       title: e.title,
       description: e.description,
@@ -41,9 +41,18 @@ export async function GET(req: NextRequest) {
       coverColor: e.coverColor,
       status: e.status,
       purchased,
+      // Cámara 1
       streamUrl: purchased || isOwner ? e.streamUrl : null,
       rtmpUrl: isOwner ? e.rtmpUrl : null,
       streamKey: isOwner ? e.streamKey : null,
+      // Cámara 2
+      streamUrl2: purchased || isOwner ? e.streamUrl2 : null,
+      rtmpUrl2: isOwner ? e.rtmpUrl2 : null,
+      streamKey2: isOwner ? e.streamKey2 : null,
+      // Cámara 3
+      streamUrl3: purchased || isOwner ? e.streamUrl3 : null,
+      rtmpUrl3: isOwner ? e.rtmpUrl3 : null,
+      streamKey3: isOwner ? e.streamKey3 : null,
     }
   })
 
