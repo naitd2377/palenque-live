@@ -71,7 +71,16 @@ export async function POST(req: NextRequest) {
   }
 
   const body = await req.json().catch(() => ({} as any))
-  const { title, description, eventDate, price, streamUrl, rtmpUrl, streamKey, coverColor } = body as {
+  const { title, description, eventDate, price, streamUrl, streamUrl2, streamUrl3, rtmpUrl, rtmpUrl2, rtmpUrl3, streamKey, streamKey2, streamKey3, coverColor, status } = body as any {
+      if (streamUrl !== undefined) data.streamUrl = String(streamUrl).trim()
+  if (streamUrl2 !== undefined) data.streamUrl2 = String(streamUrl2).trim()
+  if (streamUrl3 !== undefined) data.streamUrl3 = String(streamUrl3).trim()
+  if (rtmpUrl !== undefined) data.rtmpUrl = String(rtmpUrl).trim()
+  if (rtmpUrl2 !== undefined) data.rtmpUrl2 = String(rtmpUrl2).trim()
+  if (rtmpUrl3 !== undefined) data.rtmpUrl3 = String(rtmpUrl3).trim()
+  if (streamKey !== undefined) data.streamKey = String(streamKey).trim()
+  if (streamKey2 !== undefined) data.streamKey2 = String(streamKey2).trim()
+  if (streamKey3 !== undefined) data.streamKey3 = String(streamKey3).trim()
     title?: string
     description?: string
     eventDate?: string
