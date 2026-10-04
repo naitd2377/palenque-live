@@ -449,8 +449,14 @@ function EventFormDialog({
   )
   const [price, setPrice] = useState(event?.price ?? 100)
   const [streamUrl, setStreamUrl] = useState(event?.streamUrl ?? '')
+  const [streamUrl2, setStreamUrl2] = useState(event?.streamUrl2 ?? '')
+  const [streamUrl3, setStreamUrl3] = useState(event?.streamUrl3 ?? '')
   const [rtmpUrl, setRtmpUrl] = useState(event?.rtmpUrl ?? 'rtmp://tu-servidor.com/live')
+  const [rtmpUrl2, setRtmpUrl2] = useState(event?.rtmpUrl2 ?? 'rtmp://tu-servidor.com/live')
+  const [rtmpUrl3, setRtmpUrl3] = useState(event?.rtmpUrl3 ?? 'rtmp://tu-servidor.com/live')
   const [streamKey, setStreamKey] = useState(event?.streamKey ?? '')
+  const [streamKey2, setStreamKey2] = useState(event?.streamKey2 ?? '')
+  const [streamKey3, setStreamKey3] = useState(event?.streamKey3 ?? '')
   const [coverColor, setCoverColor] = useState(event?.coverColor ?? '#b91c1c')
   const [saving, setSaving] = useState(false)
 
@@ -466,14 +472,20 @@ function EventFormDialog({
       const res = await fetch(url, {
         method,
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
+                body: JSON.stringify({
           title,
           description,
           eventDate: new Date(eventDate).toISOString(),
           price: Number(price),
           streamUrl,
+          streamUrl2,
+          streamUrl3,
           rtmpUrl,
+          rtmpUrl2,
+          rtmpUrl3,
           streamKey: streamKey || undefined,
+          streamKey2: streamKey2 || undefined,
+          streamKey3: streamKey3 || undefined,
           coverColor,
         }),
       })
@@ -558,44 +570,59 @@ function EventFormDialog({
             </div>
           </div>
 
+                    {/* Cámara 1 */}
           <div className="rounded-md border border-amber-300 bg-amber-50 p-3">
-            <p className="mb-2 text-sm font-semibold text-amber-900">Configuración de streaming</p>
+            <p className="mb-2 text-sm font-semibold text-amber-900">📹 Cámara 1 (Principal)</p>
             <div className="space-y-2">
               <div className="space-y-1">
-                <Label htmlFor="ev-rtmp" className="text-xs">
-                  Servidor RTMP (a donde apunta tu celular)
-                </Label>
-                <Input
-                  id="ev-rtmp"
-                  value={rtmpUrl}
-                  onChange={(e) => setRtmpUrl(e.target.value)}
-                  className="font-mono text-xs"
-                  placeholder="rtmp://tu-servidor.com/live"
-                />
+                <Label htmlFor="ev-rtmp" className="text-xs">Servidor RTMP</Label>
+                <Input id="ev-rtmp" value={rtmpUrl} onChange={(e) => setRtmpUrl(e.target.value)} className="font-mono text-xs" placeholder="rtmp://tu-servidor.com/live" />
               </div>
               <div className="space-y-1">
-                <Label htmlFor="ev-key" className="text-xs">
-                  Stream key (déjalo vacío para autogenerar)
-                </Label>
-                <Input
-                  id="ev-key"
-                  value={streamKey}
-                  onChange={(e) => setStreamKey(e.target.value)}
-                  className="font-mono text-xs"
-                  placeholder="autogenerado"
-                />
+                <Label htmlFor="ev-key" className="text-xs">Stream key (vacío = autogenerar)</Label>
+                <Input id="ev-key" value={streamKey} onChange={(e) => setStreamKey(e.target.value)} className="font-mono text-xs" placeholder="autogenerado" />
               </div>
               <div className="space-y-1">
-                <Label htmlFor="ev-hls" className="text-xs">
-                  URL HLS pública (.m3u8) — visible solo para compradores
-                </Label>
-                <Input
-                  id="ev-hls"
-                  value={streamUrl}
-                  onChange={(e) => setStreamUrl(e.target.value)}
-                  className="font-mono text-xs"
-                  placeholder="https://tu-servidor.com/live/key.m3u8"
-                />
+                <Label htmlFor="ev-hls" className="text-xs">URL HLS pública (.m3u8)</Label>
+                <Input id="ev-hls" value={streamUrl} onChange={(e) => setStreamUrl(e.target.value)} className="font-mono text-xs" placeholder="https://stream.mux.com/camara1.m3u8" />
+              </div>
+            </div>
+          </div>
+
+          {/* Cámara 2 */}
+          <div className="rounded-md border border-stone-300 bg-stone-50 p-3">
+            <p className="mb-2 text-sm font-semibold text-stone-700">📹 Cámara 2 (opcional)</p>
+            <div className="space-y-2">
+              <div className="space-y-1">
+                <Label htmlFor="ev-rtmp2" className="text-xs">Servidor RTMP</Label>
+                <Input id="ev-rtmp2" value={rtmpUrl2} onChange={(e) => setRtmpUrl2(e.target.value)} className="font-mono text-xs" placeholder="rtmp://tu-servidor.com/live" />
+              </div>
+              <div className="space-y-1">
+                <Label htmlFor="ev-key2" className="text-xs">Stream key</Label>
+                <Input id="ev-key2" value={streamKey2} onChange={(e) => setStreamKey2(e.target.value)} className="font-mono text-xs" placeholder="autogenerado" />
+              </div>
+              <div className="space-y-1">
+                <Label htmlFor="ev-hls2" className="text-xs">URL HLS pública (.m3u8)</Label>
+                <Input id="ev-hls2" value={streamUrl2} onChange={(e) => setStreamUrl2(e.target.value)} className="font-mono text-xs" placeholder="https://stream.mux.com/camara2.m3u8" />
+              </div>
+            </div>
+          </div>
+
+          {/* Cámara 3 */}
+          <div className="rounded-md border border-stone-300 bg-stone-50 p-3">
+            <p className="mb-2 text-sm font-semibold text-stone-700">📹 Cámara 3 (opcional)</p>
+            <div className="space-y-2">
+              <div className="space-y-1">
+                <Label htmlFor="ev-rtmp3" className="text-xs">Servidor RTMP</Label>
+                <Input id="ev-rtmp3" value={rtmpUrl3} onChange={(e) => setRtmpUrl3(e.target.value)} className="font-mono text-xs" placeholder="rtmp://tu-servidor.com/live" />
+              </div>
+              <div className="space-y-1">
+                <Label htmlFor="ev-key3" className="text-xs">Stream key</Label>
+                <Input id="ev-key3" value={streamKey3} onChange={(e) => setStreamKey3(e.target.value)} className="font-mono text-xs" placeholder="autogenerado" />
+              </div>
+              <div className="space-y-1">
+                <Label htmlFor="ev-hls3" className="text-xs">URL HLS pública (.m3u8)</Label>
+                <Input id="ev-hls3" value={streamUrl3} onChange={(e) => setStreamUrl3(e.target.value)} className="font-mono text-xs" placeholder="https://stream.mux.com/camara3.m3u8" />
               </div>
             </div>
           </div>
