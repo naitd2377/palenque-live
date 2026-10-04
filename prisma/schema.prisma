@@ -31,16 +31,26 @@ model Event {
   eventDate   DateTime
   price       Float
   currency    String   @default("MXN")
+  // Cámara 1 (principal)
   streamUrl   String?  // HLS .m3u8 URL pública
   streamKey   String?  // clave RTMP para el broadcaster
   rtmpUrl     String?  // servidor RTMP destino
+  // Cámara 2 (opcional)
+  streamUrl2  String?
+  streamKey2  String?
+  rtmpUrl2    String?
+  // Cámara 3 (opcional)
+  streamUrl3  String?
+  streamKey3  String?
+  rtmpUrl3    String?
+  // Metadatos
   coverColor  String   @default("#b91c1c")
   status      String   @default("UPCOMING") // UPCOMING | LIVE | ENDED | CANCELLED
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
   purchases Purchase[]
-  messages Message[]
+  messages  Message[]
 }
 
 model Purchase {
