@@ -3,7 +3,7 @@ import { db } from '@/lib/db'
 import { getCurrentUser, requireAdmin } from '@/lib/session'
 
 /**
- * GET /api/events/[id]  — public event info (streamUrl hidden unless purchased or admin)
+ * GET /api/events/[id]
  */
 export async function GET(req: NextRequest, ctx: { params: Promise<{ id: string }> }) {
   const { id } = await ctx.params
@@ -29,9 +29,18 @@ export async function GET(req: NextRequest, ctx: { params: Promise<{ id: string 
       coverColor: event.coverColor,
       status: event.status,
       purchased,
+      // Cámara 1
       streamUrl: purchased || isOwner ? event.streamUrl : null,
       rtmpUrl: isOwner ? event.rtmpUrl : null,
       streamKey: isOwner ? event.streamKey : null,
+      // Cámara 2
+      streamUrl2: purchased || isOwner ? event.streamUrl2 : null,
+      rtmpUrl2: isOwner ? event.rtmpUrl2 : null,
+      streamKey2: isOwner ? event.streamKey2 : null,
+      // Cámara 3
+      streamUrl3: purchased || isOwner ? event.streamUrl3 : null,
+      rtmpUrl3: isOwner ? event.rtmpUrl3 : null,
+      streamKey3: isOwner ? event.streamKey3 : null,
     },
   })
 }
@@ -47,7 +56,13 @@ export async function PUT(req: NextRequest, ctx: { params: Promise<{ id: string 
   }
   const { id } = await ctx.params
   const body = await req.json().catch(() => ({} as any))
-  const { title, description, eventDate, price, streamUrl, rtmpUrl, streamKey, coverColor, status } = body as any
+  const {
+    title, description, eventDate, price,
+    streamUrl, streamUrl2, streamUrl3,
+    rtmpUrl, rtmpUrl2, rtmpUrl3,
+    streamKey, streamKey2, streamKey3,
+    coverColor, status,
+  } = body as any
 
   const existing = await db.event.findUnique({ where: { id } })
   if (!existing) return NextResponse.json({ error: 'Evento no encontrado' }, { status: 404 })
@@ -61,8 +76,14 @@ export async function PUT(req: NextRequest, ctx: { params: Promise<{ id: string 
   }
   if (price !== undefined) data.price = Number(price)
   if (streamUrl !== undefined) data.streamUrl = String(streamUrl).trim()
+  if (streamUrl2 !== undefined) data.streamUrl2 = String(streamUrl2).trim()
+  if (streamUrl3 !== undefined) data.streamUrl3 = String(streamUrl3).trim()
   if (rtmpUrl !== undefined) data.rtmpUrl = String(rtmpUrl).trim()
+  if (rtmpUrl2 !== undefined) data.rtmpUrl2 = String(rtmpUrl2).trim()
+  if (rtmpUrl3 !== undefined) data.rtmpUrl3 = String(rtmpUrl3).trim()
   if (streamKey !== undefined) data.streamKey = String(streamKey).trim()
+  if (streamKey2 !== undefined) data.streamKey2 = String(streamKey2).trim()
+  if (streamKey3 !== undefined) data.streamKey3 = String(streamKey3).trim()
   if (coverColor !== undefined) data.coverColor = String(coverColor).trim()
   if (status !== undefined && ['UPCOMING', 'LIVE', 'ENDED', 'CANCELLED'].includes(status)) {
     data.status = status
