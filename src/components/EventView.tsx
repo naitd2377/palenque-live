@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { ArrowLeft, Calendar, Clock, Radio, Lock, Play, CheckCircle2, Shield } from 'lucide-react'
+import { ArrowLeft, Calendar, Clock, Radio, Lock, Play, CheckCircle2, Shield, Camera, Video } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -21,9 +21,18 @@ type EventDetail = {
   coverColor: string
   status: string
   purchased: boolean
+  // Cámara 1
   streamUrl: string | null
   rtmpUrl: string | null
   streamKey: string | null
+  // Cámara 2
+  streamUrl2: string | null
+  rtmpUrl2: string | null
+  streamKey2: string | null
+  // Cámara 3
+  streamUrl3: string | null
+  rtmpUrl3: string | null
+  streamKey3: string | null
 }
 
 export function EventView({ eventId }: { eventId: string }) {
@@ -31,6 +40,7 @@ export function EventView({ eventId }: { eventId: string }) {
   const [event, setEvent] = useState<EventDetail | null>(null)
   const [loading, setLoading] = useState(true)
   const [buying, setBuying] = useState(false)
+  const [selectedCamera, setSelectedCamera] = useState<1 | 2 | 3>(1)
 
   useEffect(() => {
     let cancelled = false
@@ -110,7 +120,16 @@ export function EventView({ eventId }: { eventId: string }) {
   })
 
   const canWatch = event.purchased || user?.role === 'ADMIN'
-  const hasStream = !!event.streamUrl
+  
+  // Lista de cámaras disponibles
+  const cameras = [
+    { id: 1, label: 'Cámara 1 (Principal)', url: event.streamUrl },
+    { id: 2, label: 'Cámara 2', url: event.streamUrl2 },
+    { id: 3, label: 'Cámara 3', url: event.streamUrl3 },
+  ].filter((c) => c.url) // Solo mostramos las cámaras que tengan URL
+
+  const currentUrl = selectedCamera === 1 ? event.streamUrl : selectedCamera === 2 ? event.streamUrl2 : event.streamUrl3
+  const showVideo = canWatch && !!currentUrl
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-8">
@@ -118,13 +137,34 @@ export function EventView({ eventId }: { eventId: string }) {
         <ArrowLeft className="mr-2 h-4 w-4" /> Volver a eventos
       </Button>
 
-      {/* Layout: video + chat side by side on desktop */}
+      {/* Layout: video + chat */}
       <div className="grid gap-4 lg:grid-cols-[2fr_1fr]">
         {/* Player area */}
         <div>
-          {canWatch && hasStream ? (
-            <VideoPlayer src={event.streamUrl!} autoPlay className="shadow-xl" />
-          ) : canWatch && !hasStream ? (
+          {showVideo && currentUrl ? (
+            <div>
+              <VideoPlayer src={currentUrl} autoPlay className="shadow-xl" />
+              
+              {/* Selector de cámara */}
+              {cameras.length > 1 && (
+                <div className="mt-3 flex flex-wrap gap-2">
+                  <span className="text-sm text-muted-foreground self-center mr-2">Cámara:</span>
+                  {cameras.map((cam) => (
+                    <Button
+                      key={cam.id}
+                      size="sm"
+                      variant={selectedCamera === cam.id ? 'default' : 'outline'}
+                      className={selectedCamera === cam.id ? 'bg-red-700 hover:bg-red-800' : ''}
+                      onClick={() => setSelectedCamera(cam.id as 1 | 2 | 3)}
+                    >
+                      <Camera className="mr-1 h-3 w-3" />
+                      {cam.id === 1 ? 'Principal' : `Cámara ${cam.id}`}
+                    </Button>
+                  ))}
+                </div>
+              )}
+            </div>
+          ) : canWatch ? (
             <div
               className="flex aspect-video w-full flex-col items-center justify-center rounded-xl text-white"
               style={{ background: `linear-gradient(135deg, ${event.coverColor} 0%, #1c1917 100%)` }}
@@ -134,7 +174,7 @@ export function EventView({ eventId }: { eventId: string }) {
               <p className="mt-1 text-sm text-white/70">
                 {event.status === 'UPCOMING'
                   ? `El evento inicia el ${dateStr} a las ${timeStr}`
-                  : 'El administrador aún no configura la URL del stream.'}
+                  : 'El administrador aún no configura las URLs de streaming.'}
               </p>
             </div>
           ) : (
@@ -154,21 +194,19 @@ export function EventView({ eventId }: { eventId: string }) {
               <Button
                 size="lg"
                 className="mt-5 bg-amber-500 text-stone-900 hover:bg-amber-400"
-                disabled={buying || event.status === 'ENDED'}
+                disabled={buying}
                 onClick={buy}
               >
                 {buying
-                  ? 'Redirigiendo…'
-                  : event.status === 'ENDED'
-                    ? 'Evento finalizado'
-                    : `Comprar acceso — $${event.price.toFixed(0)} ${event.currency}`}
+                  ? 'Rediridiendo…'
+                  : `Comprar acceso — $${event.price.toFixed(0)} ${event.currency}`}
               </Button>
             </div>
           )}
         </div>
 
-        {/* Chat (solo visible si tiene acceso) */}
-        {canWatch && hasStream && (
+        {/* Chat */}
+        {canWatch && showVideo && (
           <div className="lg:h-full">
             <ChatBox eventId={event.id} />
           </div>
@@ -188,6 +226,11 @@ export function EventView({ eventId }: { eventId: string }) {
                 <span className="flex items-center gap-1">
                   <Clock className="h-4 w-4" /> {timeStr}
                 </span>
+                {cameras.length > 1 && (
+                  <span className="flex items-center gap-1 text-red-700">
+                    <Video className="h-4 w-4" /> {cameras.length} cámaras disponibles
+                  </span>
+                )}
               </div>
             </div>
             <div className="flex items-center gap-2">
@@ -218,24 +261,69 @@ export function EventView({ eventId }: { eventId: string }) {
               <p className="mb-2 flex items-center gap-2 text-sm font-semibold text-amber-800">
                 <Shield className="h-4 w-4" /> Configuración de streaming (solo admin)
               </p>
-              <dl className="grid gap-2 text-sm sm:grid-cols-2">
+              <div className="space-y-3">
+                {/* Cámara 1 */}
                 <div>
-                  <dt className="text-muted-foreground">Servidor RTMP:</dt>
-                  <dd className="font-mono text-xs">{event.rtmpUrl}</dd>
+                  <p className="text-xs font-bold text-amber-900">📹 CÁMARA 1 (Principal)</p>
+                  <dl className="mt-1 grid gap-1 text-xs sm:grid-cols-3">
+                    <div>
+                      <dt className="text-muted-foreground">RTMP:</dt>
+                      <dd className="font-mono break-all">{event.rtmpUrl}</dd>
+                    </div>
+                    <div>
+                      <dt className="text-muted-foreground">Key:</dt>
+                      <dd className="font-mono break-all">{event.streamKey}</dd>
+                    </div>
+                    <div>
+                      <dt className="text-muted-foreground">HLS:</dt>
+                      <dd className="font-mono break-all">{event.streamUrl || 'No configurada'}</dd>
+                    </div>
+                  </dl>
                 </div>
-                <div>
-                  <dt className="text-muted-foreground">Stream key:</dt>
-                  <dd className="font-mono text-xs">{event.streamKey}</dd>
-                </div>
-                <div className="sm:col-span-2">
-                  <dt className="text-muted-foreground">URL pública HLS (visible para compradores):</dt>
-                  <dd className="font-mono text-xs break-all">
-                    {event.streamUrl || <span className="text-red-600">No configurada — agrégala en el panel admin</span>}
-                  </dd>
-                </div>
-              </dl>
+                
+                {event.streamUrl2 && (
+                  <div>
+                    <p className="text-xs font-bold text-amber-900">📹 CÁMARA 2</p>
+                    <dl className="mt-1 grid gap-1 text-xs sm:grid-cols-3">
+                      <div>
+                        <dt className="text-muted-foreground">RTMP:</dt>
+                        <dd className="font-mono break-all">{event.rtmpUrl2}</dd>
+                      </div>
+                      <div>
+                        <dt className="text-muted-foreground">Key:</dt>
+                        <dd className="font-mono break-all">{event.streamKey2}</dd>
+                      </div>
+                      <div>
+                        <dt className="text-muted-foreground">HLS:</dt>
+                        <dd className="font-mono break-all">{event.streamUrl2}</dd>
+                      </div>
+                    </dl>
+                  </div>
+                )}
+                
+                {event.streamUrl3 && (
+                  <div>
+                    <p className="text-xs font-bold text-amber-900">📹 CÁMARA 3</p>
+                    <dl className="mt-1 grid gap-1 text-xs sm:grid-cols-3">
+                      <div>
+                        <dt className="text-muted-foreground">RTMP:</dt>
+                        <dd className="font-mono break-all">{event.rtmpUrl3}</dd>
+                      </div>
+                      <div>
+                        <dt className="text-muted-foreground">Key:</dt>
+                        <dd className="font-mono break-all">{event.streamKey3}</dd>
+                      </div>
+                      <div>
+                        <dt className="text-muted-foreground">HLS:</dt>
+                        <dd className="font-mono break-all">{event.streamUrl3}</dd>
+                      </div>
+                    </dl>
+                  </div>
+                )}
+              </div>
               <p className="mt-3 text-xs text-amber-800/80">
-                Configura estas credenciales en la app Larix Broadcaster de tu celular para iniciar la transmisión.
+                💡 Para multicámara: cada celular debe transmitir a su propia URL de Mux con su propia Stream Key.
+                Crea un Live Stream separado en Mux por cada cámara.
               </p>
             </div>
           )}
