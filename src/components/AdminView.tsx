@@ -52,9 +52,18 @@ type EventItem = {
   coverColor: string
   status: string
   purchased: boolean
+  // Cámara 1
   streamUrl: string | null
   rtmpUrl: string | null
   streamKey: string | null
+  // Cámara 2
+  streamUrl2: string | null
+  rtmpUrl2: string | null
+  streamKey2: string | null
+  // Cámara 3
+  streamUrl3: string | null
+  rtmpUrl3: string | null
+  streamKey3: string | null
 }
 
 type Stats = {
