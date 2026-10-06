@@ -71,13 +71,14 @@ export function HomeView() {
             sin depender de redes sociales.
           </p>
           <div className="flex flex-wrap gap-3">
-            <Button
+           <Button
               size="lg"
-              className="bg-amber-500 text-stone-900 hover:bg-amber-400"
-              onClick={() => (user ? setView({ name: 'events' }) : openAuth('register'))}
+              variant="outline"
+              className="border-white/30 bg-transparent text-white hover:bg-white/10"
+              onClick={() => setView({ name: 'guide' })}
             >
-              {user ? 'Ver eventos' : 'Crear mi cuenta gratis'}
-              <ArrowRight className="ml-2 h-4 w-4" />
+              <BookOpen className="mr-2 h-4 w-4" />
+              Cómo ver las transmisiones
             </Button>
             <Button
               size="lg"
