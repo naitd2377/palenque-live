@@ -41,31 +41,39 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Ya tienes acceso a este evento', alreadyPurchased: true }, { status: 400 })
   }
 
-  // Crear sesión de Stripe Checkout
-  const session = await stripe.checkout.sessions.create({
-    payment_method_types: ['card'],
-    mode: 'payment',
-    customer_email: user.email,
-    line_items: [
-      {
-        price_data: {
-          currency: 'mxn',
-          product_data: {
-            name: event.title,
-            description: event.description.slice(0, 100),
+  try {
+    // Crear sesión de Stripe Checkout
+    const session = await stripe.checkout.sessions.create({
+      payment_method_types: ['card'],
+      mode: 'payment',
+      customer_email: user.email,
+      line_items: [
+        {
+          price_data: {
+            currency: 'mxn',
+            product_data: {
+              name: event.title,
+              description: event.description.slice(0, 100),
+            },
+            unit_amount: Math.round(event.price * 100), // Stripe usa centavos
           },
-          unit_amount: Math.round(event.price * 100), // Stripe usa centavos
+          quantity: 1,
         },
-        quantity: 1,
+      ],
+      metadata: {
+        userId: user.id,
+        eventId: event.id,
       },
-    ],
-    metadata: {
-      userId: user.id,
-      eventId: event.id,
-    },
-    success_url: `${APP_URL}/?checkout=success&event=${event.id}`,
-    cancel_url: `${APP_URL}/?checkout=cancelled`,
-  })
+      success_url: `${APP_URL}/?checkout=success&event=${event.id}`,
+      cancel_url: `${APP_URL}/?checkout=cancelled`,
+    })
 
-  return NextResponse.json({ url: session.url })
+    return NextResponse.json({ url: session.url })
+  } catch (error: any) {
+    console.error('Error creating Stripe session:', error)
+    return NextResponse.json(
+      { error: 'Error al crear la sesión de pago: ' + error.message },
+      { status: 500 },
+    )
+  }
 }
