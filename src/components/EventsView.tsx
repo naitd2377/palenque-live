@@ -182,7 +182,7 @@ export function EventsView() {
                     <span className="text-2xl font-bold text-red-700">${e.price.toFixed(0)}</span>
                     <span className="ml-1 text-xs text-muted-foreground">{e.currency}</span>
                   </div>
-                  {e.purchased ? (
+                  {e.purchased || user?.role === 'ADMIN' ? (
                     <Button size="sm" onClick={() => setView({ name: 'event', eventId: e.id })}>
                       Ver
                     </Button>
