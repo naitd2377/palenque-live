@@ -46,6 +46,14 @@ model Event {
   // Metadatos
   coverColor  String   @default("#b91c1c")
   status      String   @default("UPCOMING") // UPCOMING | LIVE | ENDED | CANCELLED
+  // Overlays en vivo
+  overlayEnabled Boolean  @default(false)
+  venueName      String?
+  roundLabel     String?
+  teamRedName    String?
+  teamRedScore   Int      @default(0)
+  teamGreenName  String?
+  teamGreenScore Int      @default(0)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
