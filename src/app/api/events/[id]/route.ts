@@ -41,6 +41,14 @@ export async function GET(req: NextRequest, ctx: { params: Promise<{ id: string 
       streamUrl3: purchased || isOwner ? event.streamUrl3 : null,
       rtmpUrl3: isOwner ? event.rtmpUrl3 : null,
       streamKey3: isOwner ? event.streamKey3 : null,
+      // Overlays
+      overlayEnabled: event.overlayEnabled,
+      venueName: event.venueName,
+      roundLabel: event.roundLabel,
+      teamRedName: event.teamRedName,
+      teamRedScore: event.teamRedScore,
+      teamGreenName: event.teamGreenName,
+      teamGreenScore: event.teamGreenScore,
     },
   })
 }
@@ -62,6 +70,10 @@ export async function PUT(req: NextRequest, ctx: { params: Promise<{ id: string 
     rtmpUrl, rtmpUrl2, rtmpUrl3,
     streamKey, streamKey2, streamKey3,
     coverColor, status,
+    // Overlays
+    overlayEnabled, venueName, roundLabel,
+    teamRedName, teamRedScore,
+    teamGreenName, teamGreenScore,
   } = body as any
 
   const existing = await db.event.findUnique({ where: { id } })
@@ -88,6 +100,14 @@ export async function PUT(req: NextRequest, ctx: { params: Promise<{ id: string 
   if (status !== undefined && ['UPCOMING', 'LIVE', 'ENDED', 'CANCELLED'].includes(status)) {
     data.status = status
   }
+  // Overlays
+  if (overlayEnabled !== undefined) data.overlayEnabled = Boolean(overlayEnabled)
+  if (venueName !== undefined) data.venueName = String(venueName).trim()
+  if (roundLabel !== undefined) data.roundLabel = String(roundLabel).trim()
+  if (teamRedName !== undefined) data.teamRedName = String(teamRedName).trim()
+  if (teamRedScore !== undefined) data.teamRedScore = Number(teamRedScore) || 0
+  if (teamGreenName !== undefined) data.teamGreenName = String(teamGreenName).trim()
+  if (teamGreenScore !== undefined) data.teamGreenScore = Number(teamGreenScore) || 0
 
   const updated = await db.event.update({ where: { id }, data })
   return NextResponse.json({ event: updated })
