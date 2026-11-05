@@ -51,6 +51,14 @@ export async function GET(req: NextRequest) {
       streamUrl3: purchased || isOwner ? e.streamUrl3 : null,
       rtmpUrl3: isOwner ? e.rtmpUrl3 : null,
       streamKey3: isOwner ? e.streamKey3 : null,
+      // Overlays
+      overlayEnabled: e.overlayEnabled,
+      venueName: e.venueName,
+      roundLabel: e.roundLabel,
+      teamRedName: e.teamRedName,
+      teamRedScore: e.teamRedScore,
+      teamGreenName: e.teamGreenName,
+      teamGreenScore: e.teamGreenScore,
     }
   })
 
