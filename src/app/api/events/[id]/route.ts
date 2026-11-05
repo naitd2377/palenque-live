@@ -2,9 +2,6 @@ import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { getCurrentUser, requireAdmin } from '@/lib/session'
 
-/**
- * GET /api/events/[id]
- */
 export async function GET(req: NextRequest, ctx: { params: Promise<{ id: string }> }) {
   const { id } = await ctx.params
   const user = await getCurrentUser(req)
@@ -12,11 +9,7 @@ export async function GET(req: NextRequest, ctx: { params: Promise<{ id: string 
   if (!event) return NextResponse.json({ error: 'Evento no encontrado' }, { status: 404 })
 
   const isOwner = user?.role === 'ADMIN'
-  const purchased = user
-    ? !!(await db.purchase.findUnique({
-        where: { userId_eventId: { userId: user.id, eventId: event.id } },
-      }))
-    : false
+  const purchased = user ? !!(await db.purchase.findUnique({ where: { userId_eventId: { userId: user.id, eventId: event.id } } })) : false
 
   return NextResponse.json({
     event: {
@@ -29,22 +22,20 @@ export async function GET(req: NextRequest, ctx: { params: Promise<{ id: string 
       coverColor: event.coverColor,
       status: event.status,
       purchased,
-      // Cámara 1
       streamUrl: purchased || isOwner ? event.streamUrl : null,
       rtmpUrl: isOwner ? event.rtmpUrl : null,
       streamKey: isOwner ? event.streamKey : null,
-      // Cámara 2
       streamUrl2: purchased || isOwner ? event.streamUrl2 : null,
       rtmpUrl2: isOwner ? event.rtmpUrl2 : null,
       streamKey2: isOwner ? event.streamKey2 : null,
-      // Cámara 3
       streamUrl3: purchased || isOwner ? event.streamUrl3 : null,
       rtmpUrl3: isOwner ? event.rtmpUrl3 : null,
       streamKey3: isOwner ? event.streamKey3 : null,
-      // Overlays
       overlayEnabled: event.overlayEnabled,
       venueName: event.venueName,
       roundLabel: event.roundLabel,
+      fightLabel: event.fightLabel,
+      winner: event.winner,
       teamRedName: event.teamRedName,
       teamRedScore: event.teamRedScore,
       teamGreenName: event.teamGreenName,
@@ -53,9 +44,6 @@ export async function GET(req: NextRequest, ctx: { params: Promise<{ id: string 
   })
 }
 
-/**
- * PUT /api/events/[id]  (ADMIN only)
- */
 export async function PUT(req: NextRequest, ctx: { params: Promise<{ id: string }> }) {
   try {
     await requireAdmin(req)
@@ -70,10 +58,8 @@ export async function PUT(req: NextRequest, ctx: { params: Promise<{ id: string 
     rtmpUrl, rtmpUrl2, rtmpUrl3,
     streamKey, streamKey2, streamKey3,
     coverColor, status,
-    // Overlays
-    overlayEnabled, venueName, roundLabel,
-    teamRedName, teamRedScore,
-    teamGreenName, teamGreenScore,
+    overlayEnabled, venueName, roundLabel, fightLabel, winner,
+    teamRedName, teamRedScore, teamGreenName, teamGreenScore,
   } = body as any
 
   const existing = await db.event.findUnique({ where: { id } })
@@ -82,10 +68,7 @@ export async function PUT(req: NextRequest, ctx: { params: Promise<{ id: string 
   const data: any = {}
   if (title !== undefined) data.title = String(title).trim()
   if (description !== undefined) data.description = String(description).trim()
-  if (eventDate !== undefined) {
-    const d = new Date(eventDate)
-    if (!isNaN(d.getTime())) data.eventDate = d
-  }
+  if (eventDate !== undefined) { const d = new Date(eventDate); if (!isNaN(d.getTime())) data.eventDate = d }
   if (price !== undefined) data.price = Number(price)
   if (streamUrl !== undefined) data.streamUrl = String(streamUrl).trim()
   if (streamUrl2 !== undefined) data.streamUrl2 = String(streamUrl2).trim()
@@ -97,13 +80,13 @@ export async function PUT(req: NextRequest, ctx: { params: Promise<{ id: string 
   if (streamKey2 !== undefined) data.streamKey2 = String(streamKey2).trim()
   if (streamKey3 !== undefined) data.streamKey3 = String(streamKey3).trim()
   if (coverColor !== undefined) data.coverColor = String(coverColor).trim()
-  if (status !== undefined && ['UPCOMING', 'LIVE', 'ENDED', 'CANCELLED'].includes(status)) {
-    data.status = status
-  }
-  // Overlays
+  if (status !== undefined && ['UPCOMING', 'LIVE', 'ENDED', 'CANCELLED'].includes(status)) data.status = status
+  
   if (overlayEnabled !== undefined) data.overlayEnabled = Boolean(overlayEnabled)
   if (venueName !== undefined) data.venueName = String(venueName).trim()
   if (roundLabel !== undefined) data.roundLabel = String(roundLabel).trim()
+  if (fightLabel !== undefined) data.fightLabel = String(fightLabel).trim()
+  if (winner !== undefined) data.winner = winner === '' ? null : String(winner).trim()
   if (teamRedName !== undefined) data.teamRedName = String(teamRedName).trim()
   if (teamRedScore !== undefined) data.teamRedScore = Number(teamRedScore) || 0
   if (teamGreenName !== undefined) data.teamGreenName = String(teamGreenName).trim()
@@ -113,9 +96,6 @@ export async function PUT(req: NextRequest, ctx: { params: Promise<{ id: string 
   return NextResponse.json({ event: updated })
 }
 
-/**
- * DELETE /api/events/[id]  (ADMIN only)
- */
 export async function DELETE(req: NextRequest, ctx: { params: Promise<{ id: string }> }) {
   try {
     await requireAdmin(req)
