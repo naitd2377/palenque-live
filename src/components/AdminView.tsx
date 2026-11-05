@@ -2,19 +2,8 @@
 
 import { useEffect, useState } from 'react'
 import {
-  Calendar,
-  Users,
-  DollarSign,
-  TrendingUp,
-  Radio,
-  Plus,
-  Pencil,
-  Trash2,
-  X,
-  Save,
-  Copy,
-  Eye,
-  EyeOff,
+  Calendar, Users, DollarSign, TrendingUp, Radio,
+  Plus, Pencil, Trash2, X, Save, Copy, Eye, EyeOff, Shield,
 } from 'lucide-react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -22,21 +11,12 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Badge } from '@/components/ui/badge'
+import { Switch } from '@/components/ui/switch'
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-  DialogFooter,
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
 } from '@/components/ui/dialog'
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
+  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from '@/components/ui/table'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
 import { useApp } from '@/lib/store'
@@ -64,6 +44,14 @@ type EventItem = {
   streamUrl3: string | null
   rtmpUrl3: string | null
   streamKey3: string | null
+  // Overlays
+  overlayEnabled: boolean | null
+  venueName: string | null
+  roundLabel: string | null
+  teamRedName: string | null
+  teamRedScore: number | null
+  teamGreenName: string | null
+  teamGreenScore: number | null
 }
 
 type Stats = {
@@ -116,18 +104,14 @@ export function AdminView() {
     }
   }
 
-  useEffect(() => {
-    refresh()
-  }, [])
+  useEffect(() => { refresh() }, [])
 
   if (!user || user.role !== 'ADMIN') {
     return (
       <div className="mx-auto max-w-3xl px-4 py-16 text-center">
         <h2 className="text-2xl font-bold">Acceso restringido</h2>
         <p className="mt-2 text-muted-foreground">Solo los administradores pueden ver esta página.</p>
-        <Button className="mt-6" onClick={() => setView({ name: 'home' })}>
-          Volver al inicio
-        </Button>
+        <Button className="mt-6" onClick={() => setView({ name: 'home' })}>Volver al inicio</Button>
       </div>
     )
   }
@@ -136,37 +120,14 @@ export function AdminView() {
     <div className="mx-auto max-w-7xl px-4 py-8">
       <div className="mb-6">
         <h1 className="text-3xl font-bold">Panel de administrador</h1>
-        <p className="mt-1 text-muted-foreground">
-          Gestiona eventos, supervisa usuarios y revisa tus ingresos.
-        </p>
+        <p className="mt-1 text-muted-foreground">Gestiona eventos, supervisa usuarios y revisa tus ingresos.</p>
       </div>
 
-      {/* Stats grid */}
       <div className="mb-8 grid grid-cols-2 gap-4 sm:grid-cols-4">
-        <StatCard
-          icon={<DollarSign className="h-5 w-5" />}
-          label="Ingresos totales"
-          value={stats ? `$${stats.revenue.toFixed(0)}` : '—'}
-          color="bg-green-700"
-        />
-        <StatCard
-          icon={<TrendingUp className="h-5 w-5" />}
-          label="Ventas (7 días)"
-          value={stats ? String(stats.salesLast7Days) : '—'}
-          color="bg-amber-600"
-        />
-        <StatCard
-          icon={<Users className="h-5 w-5" />}
-          label="Clientes"
-          value={stats ? String(stats.totalClients) : '—'}
-          color="bg-stone-700"
-        />
-        <StatCard
-          icon={<Radio className="h-5 w-5" />}
-          label="Eventos en vivo"
-          value={stats ? String(stats.liveEvents) : '—'}
-          color="bg-red-700"
-        />
+        <StatCard icon={<DollarSign className="h-5 w-5" />} label="Ingresos totales" value={stats ? `$${stats.revenue.toFixed(0)}` : '—'} color="bg-green-700" />
+        <StatCard icon={<TrendingUp className="h-5 w-5" />} label="Ventas (7 días)" value={stats ? String(stats.salesLast7Days) : '—'} color="bg-amber-600" />
+        <StatCard icon={<Users className="h-5 w-5" />} label="Clientes" value={stats ? String(stats.totalClients) : '—'} color="bg-stone-700" />
+        <StatCard icon={<Radio className="h-5 w-5" />} label="Eventos en vivo" value={stats ? String(stats.liveEvents) : '—'} color="bg-red-700" />
       </div>
 
       <Tabs defaultValue="events">
@@ -175,7 +136,6 @@ export function AdminView() {
           <TabsTrigger value="users">Usuarios</TabsTrigger>
         </TabsList>
 
-        {/* EVENTS TAB */}
         <TabsContent value="events">
           <div className="mb-4 flex items-center justify-between">
             <h2 className="text-xl font-semibold">Eventos ({events.length})</h2>
@@ -183,20 +143,13 @@ export function AdminView() {
               <Plus className="mr-1 h-4 w-4" /> Nuevo evento
             </Button>
           </div>
-
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
             {events.map((e) => (
-              <AdminEventCard
-                key={e.id}
-                event={e}
-                onEdit={() => setEditingEvent(e)}
-                onChanged={refresh}
-              />
+              <AdminEventCard key={e.id} event={e} onEdit={() => setEditingEvent(e)} onChanged={refresh} />
             ))}
           </div>
         </TabsContent>
 
-        {/* USERS TAB */}
         <TabsContent value="users">
           <h2 className="mb-4 text-xl font-semibold">Usuarios registrados ({users.length})</h2>
           <Card>
@@ -221,19 +174,11 @@ export function AdminView() {
                         <TableCell className="text-sm">{u.email}</TableCell>
                         <TableCell className="text-sm">{u.phone || '—'}</TableCell>
                         <TableCell>
-                          {u.role === 'ADMIN' ? (
-                            <Badge className="bg-red-700 text-white hover:bg-red-800">Admin</Badge>
-                          ) : (
-                            <Badge variant="secondary">Cliente</Badge>
-                          )}
+                          {u.role === 'ADMIN' ? <Badge className="bg-red-700 text-white hover:bg-red-800">Admin</Badge> : <Badge variant="secondary">Cliente</Badge>}
                         </TableCell>
                         <TableCell className="text-center">{u.purchaseCount}</TableCell>
-                        <TableCell className="text-right font-medium text-green-700">
-                          ${u.totalSpent.toFixed(0)}
-                        </TableCell>
-                        <TableCell className="text-xs text-muted-foreground">
-                          {new Date(u.createdAt).toLocaleDateString('es-MX')}
-                        </TableCell>
+                        <TableCell className="text-right font-medium text-green-700">${u.totalSpent.toFixed(0)}</TableCell>
+                        <TableCell className="text-xs text-muted-foreground">{new Date(u.createdAt).toLocaleDateString('es-MX')}</TableCell>
                       </TableRow>
                     ))}
                   </TableBody>
@@ -244,43 +189,23 @@ export function AdminView() {
         </TabsContent>
       </Tabs>
 
-      {/* Create / Edit dialog */}
       {(creating || editingEvent) && (
         <EventFormDialog
           event={editingEvent}
-          onClose={() => {
-            setCreating(false)
-            setEditingEvent(null)
-          }}
-          onSaved={() => {
-            setCreating(false)
-            setEditingEvent(null)
-            refresh()
-          }}
+          onClose={() => { setCreating(false); setEditingEvent(null) }}
+          onSaved={() => { setCreating(false); setEditingEvent(null); refresh() }}
         />
       )}
     </div>
   )
 }
 
-function StatCard({
-  icon,
-  label,
-  value,
-  color,
-}: {
-  icon: React.ReactNode
-  label: string
-  value: string
-  color: string
-}) {
+function StatCard({ icon, label, value, color }: { icon: React.ReactNode; label: string; value: string; color: string }) {
   return (
     <Card className="border-border/60">
       <CardContent className="p-4">
         <div className="flex items-center gap-3">
-          <span className={`flex h-10 w-10 items-center justify-center rounded-lg text-white ${color}`}>
-            {icon}
-          </span>
+          <span className={`flex h-10 w-10 items-center justify-center rounded-lg text-white ${color}`}>{icon}</span>
           <div>
             <p className="text-2xl font-bold leading-none">{value}</p>
             <p className="mt-1 text-xs text-muted-foreground">{label}</p>
@@ -291,15 +216,7 @@ function StatCard({
   )
 }
 
-function AdminEventCard({
-  event,
-  onEdit,
-  onChanged,
-}: {
-  event: EventItem
-  onEdit: () => void
-  onChanged: () => void
-}) {
+function AdminEventCard({ event, onEdit, onChanged }: { event: EventItem; onEdit: () => void; onChanged: () => void }) {
   const [showKeys, setShowKeys] = useState(false)
   const [updating, setUpdating] = useState(false)
 
@@ -310,104 +227,50 @@ function AdminEventCard({
     const next = order[(idx + 1) % order.length]
     try {
       const res = await fetch(`/api/events/${event.id}/status`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
+        method: 'PATCH', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ status: next }),
       })
-      if (!res.ok) {
-        const d = await res.json()
-        toast.error(d.error ?? 'Error al actualizar estado')
-      } else {
-        toast.success(`Estado: ${next === 'LIVE' ? 'EN VIVO' : next === 'ENDED' ? 'Finalizado' : 'Próximo'}`)
-        onChanged()
-      }
-    } finally {
-      setUpdating(false)
-    }
+      if (!res.ok) { const d = await res.json(); toast.error(d.error ?? 'Error al actualizar estado') }
+      else { toast.success(`Estado: ${next === 'LIVE' ? 'EN VIVO' : next === 'ENDED' ? 'Finalizado' : 'Próximo'}`); onChanged() }
+    } finally { setUpdating(false) }
   }
 
   async function del() {
     if (!confirm(`¿Eliminar el evento "${event.title}"? Esta acción no se puede deshacer.`)) return
     const res = await fetch(`/api/events/${event.id}`, { method: 'DELETE' })
-    if (res.ok) {
-      toast.success('Evento eliminado')
-      onChanged()
-    } else {
-      toast.error('Error al eliminar')
-    }
+    if (res.ok) { toast.success('Evento eliminado'); onChanged() } else { toast.error('Error al eliminar') }
   }
 
-  function copy(text: string, label: string) {
-    navigator.clipboard.writeText(text)
-    toast.success(`${label} copiado`)
-  }
+  function copy(text: string, label: string) { navigator.clipboard.writeText(text); toast.success(`${label} copiado`) }
 
-  const dateStr = new Date(event.eventDate).toLocaleDateString('es-MX', {
-    day: 'numeric',
-    month: 'short',
-    hour: '2-digit',
-    minute: '2-digit',
-  })
+  const dateStr = new Date(event.eventDate).toLocaleDateString('es-MX', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })
 
   return (
     <Card className="overflow-hidden border-border/60">
-      <div
-        className="flex h-20 items-end p-3 text-white"
-        style={{ background: `linear-gradient(135deg, ${event.coverColor} 0%, #1c1917 100%)` }}
-      >
+      <div className="flex h-20 items-end p-3 text-white" style={{ background: `linear-gradient(135deg, ${event.coverColor} 0%, #1c1917 100%)` }}>
         <div className="flex w-full items-center justify-between">
           <span className="text-xs opacity-90">{dateStr}</span>
-          {event.status === 'LIVE' && (
-            <Badge className="bg-red-600 text-white hover:bg-red-700">
-              <span className="mr-1 inline-block h-1.5 w-1.5 animate-pulse rounded-full bg-white" />
-              LIVE
-            </Badge>
-          )}
-          {event.status === 'UPCOMING' && (
-            <Badge className="bg-amber-500 text-stone-900 hover:bg-amber-400">Próximo</Badge>
-          )}
+          {event.status === 'LIVE' && <Badge className="bg-red-600 text-white hover:bg-red-700"><span className="mr-1 inline-block h-1.5 w-1.5 animate-pulse rounded-full bg-white" />LIVE</Badge>}
+          {event.status === 'UPCOMING' && <Badge className="bg-amber-500 text-stone-900 hover:bg-amber-400">Próximo</Badge>}
           {event.status === 'ENDED' && <Badge variant="secondary">Finalizado</Badge>}
         </div>
       </div>
       <CardContent className="p-4">
         <h3 className="line-clamp-1 font-semibold">{event.title}</h3>
-        <p className="mt-1 text-lg font-bold text-red-700">
-          ${event.price.toFixed(0)} <span className="text-xs font-normal text-muted-foreground">{event.currency}</span>
-        </p>
-
-        {/* Stream keys */}
+        <p className="mt-1 text-lg font-bold text-red-700">${event.price.toFixed(0)} <span className="text-xs font-normal text-muted-foreground">{event.currency}</span></p>
+        
         <div className="mt-3 space-y-1 rounded-md bg-muted/50 p-2 text-xs">
           <div className="flex items-center justify-between gap-2">
             <span className="text-muted-foreground">RTMP:</span>
             <code className="truncate font-mono">{event.rtmpUrl || '—'}</code>
-            {event.rtmpUrl && (
-              <button
-                onClick={() => copy(event.rtmpUrl!, 'RTMP')}
-                className="text-red-700 hover:text-red-900"
-                title="Copiar"
-              >
-                <Copy className="h-3 w-3" />
-              </button>
-            )}
+            {event.rtmpUrl && <button onClick={() => copy(event.rtmpUrl!, 'RTMP')} className="text-red-700 hover:text-red-900"><Copy className="h-3 w-3" /></button>}
           </div>
           <div className="flex items-center justify-between gap-2">
             <span className="text-muted-foreground">Key:</span>
             <code className="truncate font-mono">{showKeys ? event.streamKey : '••••••••'}</code>
             <div className="flex gap-1">
-              <button
-                onClick={() => setShowKeys(!showKeys)}
-                className="text-muted-foreground hover:text-foreground"
-                title={showKeys ? 'Ocultar' : 'Mostrar'}
-              >
-                {showKeys ? <EyeOff className="h-3 w-3" /> : <Eye className="h-3 w-3" />}
-              </button>
-              <button
-                onClick={() => copy(event.streamKey!, 'Stream key')}
-                className="text-red-700 hover:text-red-900"
-                title="Copiar"
-              >
-                <Copy className="h-3 w-3" />
-              </button>
+              <button onClick={() => setShowKeys(!showKeys)} className="text-muted-foreground hover:text-foreground">{showKeys ? <EyeOff className="h-3 w-3" /> : <Eye className="h-3 w-3" />}</button>
+              <button onClick={() => copy(event.streamKey!, 'Stream key')} className="text-red-700 hover:text-red-900"><Copy className="h-3 w-3" /></button>
             </div>
           </div>
           <div className="flex items-center justify-between gap-2">
@@ -417,36 +280,20 @@ function AdminEventCard({
         </div>
 
         <div className="mt-3 flex gap-2">
-          <Button size="sm" variant="outline" className="flex-1" onClick={onEdit}>
-            <Pencil className="mr-1 h-3 w-3" /> Editar
-          </Button>
-          <Button size="sm" variant="outline" onClick={cycleStatus} disabled={updating}>
-            {event.status === 'UPCOMING' ? 'Iniciar' : event.status === 'LIVE' ? 'Terminar' : 'Reabrir'}
-          </Button>
-          <Button size="sm" variant="ghost" className="text-red-700 hover:bg-red-50" onClick={del}>
-            <Trash2 className="h-4 w-4" />
-          </Button>
+          <Button size="sm" variant="outline" className="flex-1" onClick={onEdit}><Pencil className="mr-1 h-3 w-3" /> Editar</Button>
+          <Button size="sm" variant="outline" onClick={cycleStatus} disabled={updating}>{event.status === 'UPCOMING' ? 'Iniciar' : event.status === 'LIVE' ? 'Terminar' : 'Reabrir'}</Button>
+          <Button size="sm" variant="ghost" className="text-red-700 hover:bg-red-50" onClick={del}><Trash2 className="h-4 w-4" /></Button>
         </div>
       </CardContent>
     </Card>
   )
 }
 
-function EventFormDialog({
-  event,
-  onClose,
-  onSaved,
-}: {
-  event: EventItem | null
-  onClose: () => void
-  onSaved: () => void
-}) {
+function EventFormDialog({ event, onClose, onSaved }: { event: EventItem | null; onClose: () => void; onSaved: () => void }) {
   const isEdit = !!event
   const [title, setTitle] = useState(event?.title ?? '')
   const [description, setDescription] = useState(event?.description ?? '')
-  const [eventDate, setEventDate] = useState(
-    event ? new Date(event.eventDate).toISOString().slice(0, 16) : '',
-  )
+  const [eventDate, setEventDate] = useState(event ? new Date(event.eventDate).toISOString().slice(0, 16) : '')
   const [price, setPrice] = useState(event?.price ?? 100)
   const [streamUrl, setStreamUrl] = useState(event?.streamUrl ?? '')
   const [streamUrl2, setStreamUrl2] = useState(event?.streamUrl2 ?? '')
@@ -458,47 +305,36 @@ function EventFormDialog({
   const [streamKey2, setStreamKey2] = useState(event?.streamKey2 ?? '')
   const [streamKey3, setStreamKey3] = useState(event?.streamKey3 ?? '')
   const [coverColor, setCoverColor] = useState(event?.coverColor ?? '#b91c1c')
+  
+  // Overlays
+  const [overlayEnabled, setOverlayEnabled] = useState(event?.overlayEnabled ?? false)
+  const [venueName, setVenueName] = useState(event?.venueName ?? '')
+  const [roundLabel, setRoundLabel] = useState(event?.roundLabel ?? '')
+  const [teamRedName, setTeamRedName] = useState(event?.teamRedName ?? '')
+  const [teamRedScore, setTeamRedScore] = useState(event?.teamRedScore ?? 0)
+  const [teamGreenName, setTeamGreenName] = useState(event?.teamGreenName ?? '')
+  const [teamGreenScore, setTeamGreenScore] = useState(event?.teamGreenScore ?? 0)
+  
   const [saving, setSaving] = useState(false)
 
   async function save() {
-    if (!title || !description || !eventDate) {
-      toast.error('Completa título, descripción y fecha')
-      return
-    }
+    if (!title || !description || !eventDate) { toast.error('Completa título, descripción y fecha'); return }
     setSaving(true)
     try {
       const url = isEdit ? `/api/events/${event!.id}` : '/api/events'
       const method = isEdit ? 'PUT' : 'POST'
       const res = await fetch(url, {
-        method,
-        headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-          title,
-          description,
-          eventDate: new Date(eventDate).toISOString(),
-          price: Number(price),
-          streamUrl,
-          streamUrl2,
-          streamUrl3,
-          rtmpUrl,
-          rtmpUrl2,
-          rtmpUrl3,
-          streamKey: streamKey || undefined,
-          streamKey2: streamKey2 || undefined,
-          streamKey3: streamKey3 || undefined,
-          coverColor,
+        method, headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title, description, eventDate: new Date(eventDate).toISOString(), price: Number(price),
+          streamUrl, streamUrl2, streamUrl3, rtmpUrl, rtmpUrl2, rtmpUrl3, streamKey: streamKey || undefined, streamKey2: streamKey2 || undefined, streamKey3: streamKey3 || undefined, coverColor,
+          // Overlays
+          overlayEnabled, venueName, roundLabel, teamRedName, teamRedScore, teamGreenName, teamGreenScore,
         }),
       })
-      if (!res.ok) {
-        const d = await res.json()
-        toast.error(d.error ?? 'Error al guardar')
-      } else {
-        toast.success(isEdit ? 'Evento actualizado' : 'Evento creado')
-        onSaved()
-      }
-    } finally {
-      setSaving(false)
-    }
+      if (!res.ok) { const d = await res.json(); toast.error(d.error ?? 'Error al guardar') }
+      else { toast.success(isEdit ? 'Evento actualizado' : 'Evento creado'); onSaved() }
+    } finally { setSaving(false) }
   }
 
   const colors = ['#b91c1c', '#92400e', '#7c2d12', '#991b1b', '#525252', '#166534', '#1e3a8a', '#581c87']
@@ -508,11 +344,7 @@ function EventFormDialog({
       <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-lg">
         <DialogHeader>
           <DialogTitle>{isEdit ? 'Editar evento' : 'Nuevo evento'}</DialogTitle>
-          <DialogDescription>
-            {isEdit
-              ? 'Modifica los detalles del evento. Los cambios son inmediatos.'
-              : 'Completa los datos del nuevo evento. Se creará con estado "Próximo".'}
-          </DialogDescription>
+          <DialogDescription>{isEdit ? 'Modifica los detalles del evento. Los cambios son inmediatos.' : 'Completa los datos del nuevo evento. Se creará con estado "Próximo".'}</DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4">
@@ -520,72 +352,36 @@ function EventFormDialog({
             <Label htmlFor="ev-title">Título</Label>
             <Input id="ev-title" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Ej. Sábado Estelar" />
           </div>
-
           <div className="space-y-2">
             <Label htmlFor="ev-desc">Descripción</Label>
-            <Textarea
-              id="ev-desc"
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              placeholder="Describe el evento, número de peleas, horario, etc."
-              rows={3}
-            />
+            <Textarea id="ev-desc" value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Describe el evento, número de peleas, horario, etc." rows={3} />
           </div>
-
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-2">
               <Label htmlFor="ev-date">Fecha y hora</Label>
-              <Input
-                id="ev-date"
-                type="datetime-local"
-                value={eventDate}
-                onChange={(e) => setEventDate(e.target.value)}
-              />
+              <Input id="ev-date" type="datetime-local" value={eventDate} onChange={(e) => setEventDate(e.target.value)} />
             </div>
             <div className="space-y-2">
               <Label htmlFor="ev-price">Precio ({event?.currency ?? 'MXN'})</Label>
-              <Input
-                id="ev-price"
-                type="number"
-                min="0"
-                step="10"
-                value={price}
-                onChange={(e) => setPrice(Number(e.target.value))}
-              />
+              <Input id="ev-price" type="number" min="0" step="10" value={price} onChange={(e) => setPrice(Number(e.target.value))} />
             </div>
           </div>
-
           <div className="space-y-2">
             <Label>Color de portada</Label>
             <div className="flex flex-wrap gap-2">
               {colors.map((c) => (
-                <button
-                  key={c}
-                  type="button"
-                  onClick={() => setCoverColor(c)}
-                  className={`h-8 w-8 rounded-full border-2 ${coverColor === c ? 'border-foreground' : 'border-transparent'}`}
-                  style={{ backgroundColor: c }}
-                />
+                <button key={c} type="button" onClick={() => setCoverColor(c)} className={`h-8 w-8 rounded-full border-2 ${coverColor === c ? 'border-foreground' : 'border-transparent'}`} style={{ backgroundColor: c }} />
               ))}
             </div>
           </div>
 
-                    {/* Cámara 1 */}
+          {/* Cámara 1 */}
           <div className="rounded-md border border-amber-300 bg-amber-50 p-3">
             <p className="mb-2 text-sm font-semibold text-amber-900">📹 Cámara 1 (Principal)</p>
             <div className="space-y-2">
-              <div className="space-y-1">
-                <Label htmlFor="ev-rtmp" className="text-xs">Servidor RTMP</Label>
-                <Input id="ev-rtmp" value={rtmpUrl} onChange={(e) => setRtmpUrl(e.target.value)} className="font-mono text-xs" placeholder="rtmp://tu-servidor.com/live" />
-              </div>
-              <div className="space-y-1">
-                <Label htmlFor="ev-key" className="text-xs">Stream key (vacío = autogenerar)</Label>
-                <Input id="ev-key" value={streamKey} onChange={(e) => setStreamKey(e.target.value)} className="font-mono text-xs" placeholder="autogenerado" />
-              </div>
-              <div className="space-y-1">
-                <Label htmlFor="ev-hls" className="text-xs">URL HLS pública (.m3u8)</Label>
-                <Input id="ev-hls" value={streamUrl} onChange={(e) => setStreamUrl(e.target.value)} className="font-mono text-xs" placeholder="https://stream.mux.com/camara1.m3u8" />
-              </div>
+              <div className="space-y-1"><Label htmlFor="ev-rtmp" className="text-xs">Servidor RTMP</Label><Input id="ev-rtmp" value={rtmpUrl} onChange={(e) => setRtmpUrl(e.target.value)} className="font-mono text-xs" placeholder="rtmp://tu-servidor.com/live" /></div>
+              <div className="space-y-1"><Label htmlFor="ev-key" className="text-xs">Stream key (vacío = autogenerar)</Label><Input id="ev-key" value={streamKey} onChange={(e) => setStreamKey(e.target.value)} className="font-mono text-xs" placeholder="autogenerado" /></div>
+              <div className="space-y-1"><Label htmlFor="ev-hls" className="text-xs">URL HLS pública (.m3u8) o YouTube</Label><Input id="ev-hls" value={streamUrl} onChange={(e) => setStreamUrl(e.target.value)} className="font-mono text-xs" placeholder="https://stream.mux.com/camara1.m3u8 o https://youtube.com/embed/..." /></div>
             </div>
           </div>
 
@@ -593,18 +389,9 @@ function EventFormDialog({
           <div className="rounded-md border border-stone-300 bg-stone-50 p-3">
             <p className="mb-2 text-sm font-semibold text-stone-700">📹 Cámara 2 (opcional)</p>
             <div className="space-y-2">
-              <div className="space-y-1">
-                <Label htmlFor="ev-rtmp2" className="text-xs">Servidor RTMP</Label>
-                <Input id="ev-rtmp2" value={rtmpUrl2} onChange={(e) => setRtmpUrl2(e.target.value)} className="font-mono text-xs" placeholder="rtmp://tu-servidor.com/live" />
-              </div>
-              <div className="space-y-1">
-                <Label htmlFor="ev-key2" className="text-xs">Stream key</Label>
-                <Input id="ev-key2" value={streamKey2} onChange={(e) => setStreamKey2(e.target.value)} className="font-mono text-xs" placeholder="autogenerado" />
-              </div>
-              <div className="space-y-1">
-                <Label htmlFor="ev-hls2" className="text-xs">URL HLS pública (.m3u8)</Label>
-                <Input id="ev-hls2" value={streamUrl2} onChange={(e) => setStreamUrl2(e.target.value)} className="font-mono text-xs" placeholder="https://stream.mux.com/camara2.m3u8" />
-              </div>
+              <div className="space-y-1"><Label htmlFor="ev-rtmp2" className="text-xs">Servidor RTMP</Label><Input id="ev-rtmp2" value={rtmpUrl2} onChange={(e) => setRtmpUrl2(e.target.value)} className="font-mono text-xs" placeholder="rtmp://tu-servidor.com/live" /></div>
+              <div className="space-y-1"><Label htmlFor="ev-key2" className="text-xs">Stream key</Label><Input id="ev-key2" value={streamKey2} onChange={(e) => setStreamKey2(e.target.value)} className="font-mono text-xs" placeholder="autogenerado" /></div>
+              <div className="space-y-1"><Label htmlFor="ev-hls2" className="text-xs">URL HLS pública (.m3u8)</Label><Input id="ev-hls2" value={streamUrl2} onChange={(e) => setStreamUrl2(e.target.value)} className="font-mono text-xs" placeholder="https://stream.mux.com/camara2.m3u8" /></div>
             </div>
           </div>
 
@@ -612,29 +399,44 @@ function EventFormDialog({
           <div className="rounded-md border border-stone-300 bg-stone-50 p-3">
             <p className="mb-2 text-sm font-semibold text-stone-700">📹 Cámara 3 (opcional)</p>
             <div className="space-y-2">
+              <div className="space-y-1"><Label htmlFor="ev-rtmp3" className="text-xs">Servidor RTMP</Label><Input id="ev-rtmp3" value={rtmpUrl3} onChange={(e) => setRtmpUrl3(e.target.value)} className="font-mono text-xs" placeholder="rtmp://tu-servidor.com/live" /></div>
+              <div className="space-y-1"><Label htmlFor="ev-key3" className="text-xs">Stream key</Label><Input id="ev-key3" value={streamKey3} onChange={(e) => setStreamKey3(e.target.value)} className="font-mono text-xs" placeholder="autogenerado" /></div>
+              <div className="space-y-1"><Label htmlFor="ev-hls3" className="text-xs">URL HLS pública (.m3u8)</Label><Input id="ev-hls3" value={streamUrl3} onChange={(e) => setStreamUrl3(e.target.value)} className="font-mono text-xs" placeholder="https://stream.mux.com/camara3.m3u8" /></div>
+            </div>
+          </div>
+
+          {/* OVERLAYS */}
+          <div className="rounded-md border border-blue-300 bg-blue-50 p-3">
+            <div className="mb-3 flex items-center justify-between">
+              <p className="text-sm font-semibold text-blue-900">📺 Overlays en vivo (se muestran sobre el video)</p>
+              <Switch checked={overlayEnabled} onCheckedChange={(v) => setOverlayEnabled(v)} />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1"><Label className="text-xs">Lugar del Evento</Label><Input value={venueName} onChange={(e) => setVenueName(e.target.value)} placeholder="Ej: Palenque Tepatepec" className="text-sm" /></div>
+              <div className="space-y-1"><Label className="text-xs">Ronda / Pelea</Label><Input value={roundLabel} onChange={(e) => setRoundLabel(e.target.value)} placeholder="Ej: RONDA 1 / PELEA 1" className="text-sm" /></div>
+            </div>
+            <div className="mt-3 grid grid-cols-2 gap-3 border-t border-blue-200 pt-3">
+              <p className="col-span-2 text-xs font-bold text-blue-900">MARCADOR DE PARTIDOS (opcional)</p>
               <div className="space-y-1">
-                <Label htmlFor="ev-rtmp3" className="text-xs">Servidor RTMP</Label>
-                <Input id="ev-rtmp3" value={rtmpUrl3} onChange={(e) => setRtmpUrl3(e.target.value)} className="font-mono text-xs" placeholder="rtmp://tu-servidor.com/live" />
+                <Label className="text-xs">Partido Rojo (Nombre)</Label>
+                <Input value={teamRedName} onChange={(e) => setTeamRedName(e.target.value)} placeholder="Ej: PEDRO" className="text-sm" />
+                <Label className="text-xs mt-1">Score Rojo</Label>
+                <Input type="number" value={teamRedScore} onChange={(e) => setTeamRedScore(Number(e.target.value))} className="text-sm" />
               </div>
               <div className="space-y-1">
-                <Label htmlFor="ev-key3" className="text-xs">Stream key</Label>
-                <Input id="ev-key3" value={streamKey3} onChange={(e) => setStreamKey3(e.target.value)} className="font-mono text-xs" placeholder="autogenerado" />
-              </div>
-              <div className="space-y-1">
-                <Label htmlFor="ev-hls3" className="text-xs">URL HLS pública (.m3u8)</Label>
-                <Input id="ev-hls3" value={streamUrl3} onChange={(e) => setStreamUrl3(e.target.value)} className="font-mono text-xs" placeholder="https://stream.mux.com/camara3.m3u8" />
+                <Label className="text-xs">Partido Verde (Nombre)</Label>
+                <Input value={teamGreenName} onChange={(e) => setTeamGreenName(e.target.value)} placeholder="Ej: SAUL" className="text-sm" />
+                <Label className="text-xs mt-1">Score Verde</Label>
+                <Input type="number" value={teamGreenScore} onChange={(e) => setTeamGreenScore(Number(e.target.value))} className="text-sm" />
               </div>
             </div>
           </div>
+
         </div>
 
         <DialogFooter>
-          <Button variant="outline" onClick={onClose}>
-            <X className="mr-1 h-4 w-4" /> Cancelar
-          </Button>
-          <Button className="bg-red-700 hover:bg-red-800" onClick={save} disabled={saving}>
-            <Save className="mr-1 h-4 w-4" /> {saving ? 'Guardando…' : 'Guardar'}
-          </Button>
+          <Button variant="outline" onClick={onClose}><X className="mr-1 h-4 w-4" /> Cancelar</Button>
+          <Button className="bg-red-700 hover:bg-red-800" onClick={save} disabled={saving}><Save className="mr-1 h-4 w-4" /> {saving ? 'Guardando…' : 'Guardar'}</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
