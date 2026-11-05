@@ -16,7 +16,7 @@ model User {
   name      String
   phone     String?
   password  String
-  role      String   @default("CLIENT") // ADMIN | CLIENT
+  role      String   @default("CLIENT")
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -31,34 +31,33 @@ model Event {
   eventDate   DateTime
   price       Float
   currency    String   @default("MXN")
-  // Cámara 1 (principal)
-  streamUrl   String?  // HLS .m3u8 URL pública
-  streamKey   String?  // clave RTMP para el broadcaster
-  rtmpUrl     String?  // servidor RTMP destino
-  // Cámara 2 (opcional)
+  streamUrl   String?
+  streamKey   String?
+  rtmpUrl     String?
   streamUrl2  String?
   streamKey2  String?
   rtmpUrl2    String?
-  // Cámara 3 (opcional)
   streamUrl3  String?
   streamKey3  String?
   rtmpUrl3    String?
-  // Metadatos
   coverColor  String   @default("#b91c1c")
-  status      String   @default("UPCOMING") // UPCOMING | LIVE | ENDED | CANCELLED
-  // Overlays en vivo
-  overlayEnabled Boolean  @default(false)
-  venueName      String?
-  roundLabel     String?
-  teamRedName    String?
-  teamRedScore   Int      @default(0)
-  teamGreenName  String?
-  teamGreenScore Int      @default(0)
+  status      String   @default("UPCOMING")
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
   purchases Purchase[]
   messages  Message[]
+
+  // Overlays en vivo
+  overlayEnabled Boolean  @default(false)
+  venueName      String?
+  roundLabel     String?
+  fightLabel     String?
+  winner         String?
+  teamRedName    String?
+  teamRedScore   Int      @default(0)
+  teamGreenName  String?
+  teamGreenScore Int      @default(0)
 }
 
 model Purchase {
@@ -67,7 +66,7 @@ model Purchase {
   eventId   String
   amount    Float
   currency  String   @default("MXN")
-  status    String   @default("PAID") // PAID | REFUNDED
+  status    String   @default("PAID")
   createdAt DateTime @default(now())
 
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
