@@ -2,11 +2,6 @@ import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { getCurrentUser, requireAdmin } from '@/lib/session'
 
-/**
- * GET /api/events
- *   Public: returns all events with purchase info for the current user.
- *   Query: ?status=LIVE|UPCOMING|ENDED  (optional filter)
- */
 export async function GET(req: NextRequest) {
   const statusFilter = req.nextUrl.searchParams.get('status')
   const user = await getCurrentUser(req)
@@ -39,22 +34,20 @@ export async function GET(req: NextRequest) {
       coverColor: e.coverColor,
       status: e.status,
       purchased,
-      // Cámara 1
       streamUrl: purchased || isOwner ? e.streamUrl : null,
       rtmpUrl: isOwner ? e.rtmpUrl : null,
       streamKey: isOwner ? e.streamKey : null,
-      // Cámara 2
       streamUrl2: purchased || isOwner ? e.streamUrl2 : null,
       rtmpUrl2: isOwner ? e.rtmpUrl2 : null,
       streamKey2: isOwner ? e.streamKey2 : null,
-      // Cámara 3
       streamUrl3: purchased || isOwner ? e.streamUrl3 : null,
       rtmpUrl3: isOwner ? e.rtmpUrl3 : null,
       streamKey3: isOwner ? e.streamKey3 : null,
-      // Overlays
       overlayEnabled: e.overlayEnabled,
       venueName: e.venueName,
       roundLabel: e.roundLabel,
+      fightLabel: e.fightLabel,
+      winner: e.winner,
       teamRedName: e.teamRedName,
       teamRedScore: e.teamRedScore,
       teamGreenName: e.teamGreenName,
@@ -65,10 +58,6 @@ export async function GET(req: NextRequest) {
   return NextResponse.json({ events: result })
 }
 
-/**
- * POST /api/events  (ADMIN only)
- *   Body: { title, description, eventDate, price, streamUrl?, rtmpUrl?, streamKey?, coverColor? }
- */
 export async function POST(req: NextRequest) {
   try {
     await requireAdmin(req)
@@ -77,28 +66,14 @@ export async function POST(req: NextRequest) {
   }
 
   const body = await req.json().catch(() => ({} as any))
-  const { title, description, eventDate, price, streamUrl, rtmpUrl, streamKey, coverColor } = body as {
-    title?: string
-    description?: string
-    eventDate?: string
-    price?: number
-    streamUrl?: string
-    rtmpUrl?: string
-    streamKey?: string
-    coverColor?: string
-  }
+  const { title, description, eventDate, price, streamUrl, rtmpUrl, streamKey, coverColor } = body as any
 
   if (!title || !description || !eventDate || price == null) {
-    return NextResponse.json(
-      { error: 'Faltan campos obligatorios: title, description, eventDate, price' },
-      { status: 400 },
-    )
+    return NextResponse.json({ error: 'Faltan campos obligatorios' }, { status: 400 })
   }
 
   const date = new Date(eventDate)
-  if (isNaN(date.getTime())) {
-    return NextResponse.json({ error: 'Fecha inválida' }, { status: 400 })
-  }
+  if (isNaN(date.getTime())) return NextResponse.json({ error: 'Fecha inválida' }, { status: 400 })
 
   const event = await db.event.create({
     data: {
