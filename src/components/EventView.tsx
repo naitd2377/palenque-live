@@ -105,7 +105,6 @@ export function EventView({ eventId }: { eventId: string }) {
     } catch { toast.error('Error de red') } finally { setBuying(false) }
   }
 
-  // Fullscreen toggle
   const toggleFullscreen = useCallback(() => {
     if (!containerRef.current) return
     if (!document.fullscreenElement) {
@@ -141,75 +140,76 @@ export function EventView({ eventId }: { eventId: string }) {
         <div>
           {showVideo && currentUrl ? (
             <div>
-              {/* CONTENEDOR con ref para fullscreen (incluye video + overlays) */}
-              <div ref={containerRef} className="relative rounded-xl overflow-hidden bg-black" style={{ aspectRatio: '16 / 9' }}>
-                <div className="absolute inset-0">
-                  <VideoPlayer src={currentUrl} autoPlay className="shadow-xl" />
-                </div>
+              {/* CONTENEDOR PRINCIPAL (se vuelve pantalla completa) */}
+              <div 
+                ref={containerRef} 
+                className={`relative rounded-xl overflow-hidden bg-black ${isFullscreen ? 'flex items-center justify-center' : ''}`} 
+                style={isFullscreen ? { width: '100vw', height: '100vh' } : { aspectRatio: '16 / 9' }}
+              >
+                {/* Wrapper del video para centrarlo en fullscreen */}
+                <div className={`relative ${isFullscreen ? 'h-full w-full' : 'absolute inset-0'}`} style={isFullscreen ? { aspectRatio: '16 / 9', maxWidth: '100%', maxHeight: '100%' } : {}}>
+                  <VideoPlayer src={currentUrl} autoPlay />
+                  
+                  {/* BOTÓN PANTALLA COMPLETA */}
+                  <button
+                    onClick={toggleFullscreen}
+                    className="absolute bottom-2 right-2 z-30 flex h-9 w-9 items-center justify-center rounded-lg bg-black/70 text-white hover:bg-black/90 transition-colors"
+                  >
+                    {isFullscreen ? <Minimize className="h-4 w-4" /> : <Maximize className="h-4 w-4" />}
+                  </button>
 
-                {/* BOTÓN PANTALLA COMPLETA */}
-                <button
-                  onClick={toggleFullscreen}
-                  className="absolute bottom-2 right-2 z-30 flex h-9 w-9 items-center justify-center rounded-lg bg-black/70 text-white hover:bg-black/90 transition-colors"
-                  title={isFullscreen ? 'Salir de pantalla completa' : 'Pantalla completa'}
-                >
-                  {isFullscreen ? <Minimize className="h-4 w-4" /> : <Maximize className="h-4 w-4" />}
-                </button>
+                  {/* OVERLAYS */}
+                  {showOverlays && (
+                    <div className="pointer-events-none absolute inset-0 z-10 flex flex-col justify-between p-2 sm:p-4 text-white" style={{ background: 'linear-gradient(to bottom, rgba(0,0,0,0.7) 0%, transparent 20%, transparent 80%, rgba(0,0,0,0.7) 100%)' }}>
+                      <div className="flex justify-between items-start gap-2">
+                        {event.venueName && (
+                          <span className="rounded bg-black/80 px-2 py-0.5 text-[10px] sm:text-sm font-bold tracking-wider shadow-lg" style={{ textShadow: '1px 1px 2px rgba(0,0,0,0.8)' }}>
+                            📍 {event.venueName}
+                          </span>
+                        )}
+                        <div className="flex flex-col items-end gap-0.5 sm:gap-1">
+                          {event.roundLabel && (
+                            <span className="rounded border border-amber-400 bg-red-700 px-2 py-0.5 text-[10px] sm:text-sm font-black tracking-wider shadow-lg" style={{ textShadow: '1px 1px 2px rgba(0,0,0,0.8)' }}>
+                              RONDA {event.roundLabel}
+                            </span>
+                          )}
+                          {event.fightLabel && (
+                            <span className="rounded border border-amber-400 bg-red-700 px-2 py-0.5 text-[10px] sm:text-sm font-black tracking-wider shadow-lg" style={{ textShadow: '1px 1px 2px rgba(0,0,0,0.8)' }}>
+                              PELEA {event.fightLabel}
+                            </span>
+                          )}
+                        </div>
+                      </div>
 
-                {/* OVERLAY BANNER - Responsive */}
-                {showOverlays && (
-                  <div className="pointer-events-none absolute inset-0 z-10 flex flex-col justify-between p-2 sm:p-4 text-white" style={{ background: 'linear-gradient(to bottom, rgba(0,0,0,0.7) 0%, transparent 20%, transparent 80%, rgba(0,0,0,0.7) 100%)' }}>
-
-                    {/* ARRIBA */}
-                    <div className="flex justify-between items-start gap-2">
-                      {event.venueName && (
-                        <span className="rounded bg-black/80 px-2 py-0.5 text-[10px] sm:text-sm font-bold tracking-wider shadow-lg" style={{ textShadow: '1px 1px 2px rgba(0,0,0,0.8)' }}>
-                          📍 {event.venueName}
-                        </span>
+                      {(event.teamRedName || event.teamGreenName) && (
+                        <div className="flex items-end justify-between gap-1 sm:gap-2">
+                          <div className="flex items-center gap-1 sm:gap-2 rounded bg-red-600 px-2 py-1 sm:px-4 sm:py-2 text-sm sm:text-xl font-black shadow-lg" style={{ textShadow: '1px 1px 2px rgba(0,0,0,0.8)' }}>
+                            <span className="truncate max-w-[60px] sm:max-w-none">{event.teamRedName || 'ROJO'}</span>
+                            <span className="bg-white px-1.5 sm:px-3 text-base sm:text-2xl text-red-600 rounded">{event.teamRedScore}</span>
+                          </div>
+                          <div className="flex flex-col items-center">
+                            <span className="text-[8px] sm:text-xs font-bold text-amber-400">PUNTOS</span>
+                            <span className="text-base sm:text-2xl font-black text-amber-400">VS</span>
+                          </div>
+                          <div className="flex items-center gap-1 sm:gap-2 rounded bg-green-600 px-2 py-1 sm:px-4 sm:py-2 text-sm sm:text-xl font-black shadow-lg" style={{ textShadow: '1px 1px 2px rgba(0,0,0,0.8)' }}>
+                            <span className="bg-white px-1.5 sm:px-3 text-base sm:text-2xl text-green-600 rounded">{event.teamGreenScore}</span>
+                            <span className="truncate max-w-[60px] sm:max-w-none">{event.teamGreenName || 'VERDE'}</span>
+                          </div>
+                        </div>
                       )}
-                      <div className="flex flex-col items-end gap-0.5 sm:gap-1">
-                        {event.roundLabel && (
-                          <span className="rounded border border-amber-400 bg-red-700 px-2 py-0.5 text-[10px] sm:text-sm font-black tracking-wider shadow-lg" style={{ textShadow: '1px 1px 2px rgba(0,0,0,0.8)' }}>
-                            RONDA {event.roundLabel}
-                          </span>
-                        )}
-                        {event.fightLabel && (
-                          <span className="rounded border border-amber-400 bg-red-700 px-2 py-0.5 text-[10px] sm:text-sm font-black tracking-wider shadow-lg" style={{ textShadow: '1px 1px 2px rgba(0,0,0,0.8)' }}>
-                            PELEA {event.fightLabel}
-                          </span>
-                        )}
+                    </div>
+                  )}
+
+                  {/* GANADOR */}
+                  {showWinner && (
+                    <div className="pointer-events-none absolute inset-0 z-20 flex items-center justify-center">
+                      <div className="flex flex-col items-center rounded-xl sm:rounded-3xl border-2 sm:border-4 border-amber-400 px-6 py-4 sm:px-12 sm:py-8 shadow-2xl" style={{ background: event.winner === 'red' ? 'linear-gradient(135deg, #dc2626 0%, #7f1d1d 100%)' : 'linear-gradient(135deg, #16a34a 0%, #14532d 100%)', animation: 'winnerPop 0.5s ease-out' }}>
+                        <span className="text-amber-400 text-[10px] sm:text-sm font-black tracking-widest mb-1 sm:mb-2">🏆 GANADOR 🏆</span>
+                        <span className="text-white text-2xl sm:text-5xl font-black tracking-wider text-center">{event.winner === 'red' ? (event.teamRedName || 'PARTIDO ROJO') : (event.teamGreenName || 'PARTIDO VERDE')}</span>
                       </div>
                     </div>
-
-                    {/* ABAJO: Marcador */}
-                    {(event.teamRedName || event.teamGreenName) && (
-                      <div className="flex items-end justify-between gap-1 sm:gap-2">
-                        <div className="flex items-center gap-1 sm:gap-2 rounded bg-red-600 px-2 py-1 sm:px-4 sm:py-2 text-sm sm:text-xl font-black shadow-lg" style={{ textShadow: '1px 1px 2px rgba(0,0,0,0.8)' }}>
-                          <span className="truncate max-w-[60px] sm:max-w-none">{event.teamRedName || 'ROJO'}</span>
-                          <span className="bg-white px-1.5 sm:px-3 text-base sm:text-2xl text-red-600 rounded">{event.teamRedScore}</span>
-                        </div>
-                        <div className="flex flex-col items-center">
-                          <span className="text-[8px] sm:text-xs font-bold text-amber-400">PUNTOS</span>
-                          <span className="text-base sm:text-2xl font-black text-amber-400">VS</span>
-                        </div>
-                        <div className="flex items-center gap-1 sm:gap-2 rounded bg-green-600 px-2 py-1 sm:px-4 sm:py-2 text-sm sm:text-xl font-black shadow-lg" style={{ textShadow: '1px 1px 2px rgba(0,0,0,0.8)' }}>
-                          <span className="bg-white px-1.5 sm:px-3 text-base sm:text-2xl text-green-600 rounded">{event.teamGreenScore}</span>
-                          <span className="truncate max-w-[60px] sm:max-w-none">{event.teamGreenName || 'VERDE'}</span>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                )}
-
-                {/* ANUNCIO DE GANADOR */}
-                {showWinner && (
-                  <div className="pointer-events-none absolute inset-0 z-20 flex items-center justify-center">
-                    <div className="flex flex-col items-center rounded-xl sm:rounded-3xl border-2 sm:border-4 border-amber-400 px-6 py-4 sm:px-12 sm:py-8 shadow-2xl" style={{ background: event.winner === 'red' ? 'linear-gradient(135deg, #dc2626 0%, #7f1d1d 100%)' : 'linear-gradient(135deg, #16a34a 0%, #14532d 100%)', animation: 'winnerPop 0.5s ease-out' }}>
-                      <span className="text-amber-400 text-[10px] sm:text-sm font-black tracking-widest mb-1 sm:mb-2">🏆 GANADOR 🏆</span>
-                      <span className="text-white text-2xl sm:text-5xl font-black tracking-wider text-center">{event.winner === 'red' ? (event.teamRedName || 'PARTIDO ROJO') : (event.teamGreenName || 'PARTIDO VERDE')}</span>
-                    </div>
-                  </div>
-                )}
+                  )}
+                </div>
               </div>
 
               {/* Botón de control de overlays (SOLO ADMIN) */}
