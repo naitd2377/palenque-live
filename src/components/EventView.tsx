@@ -53,6 +53,7 @@ export function EventView({ eventId }: { eventId: string }) {
   const [selectedCamera, setSelectedCamera] = useState<1 | 2 | 3>(1)
   const [showControl, setShowControl] = useState(false)
   const [isFullscreen, setIsFullscreen] = useState(false)
+  const [isMobile, setIsMobile] = useState(false)
   const overlayRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -78,6 +79,14 @@ export function EventView({ eventId }: { eventId: string }) {
     })
     return () => { channel.unbind_all(); channel.unsubscribe(); pusher.disconnect() }
   }, [eventId])
+
+  // Detectar si es móvil para forzar tamaños de fuente
+  useEffect(() => {
+    const checkMobile = () => setIsMobile(window.innerWidth < 640)
+    checkMobile()
+    window.addEventListener('resize', checkMobile)
+    return () => window.removeEventListener('resize', checkMobile)
+  }, [])
 
   const updateOverlay = useCallback(async (field: string, value: any) => {
     if (!event) return
@@ -132,6 +141,16 @@ export function EventView({ eventId }: { eventId: string }) {
   const showOverlays = event.overlayEnabled && (event.venueName || event.roundLabel || event.fightLabel || event.teamRedName || event.teamGreenName)
   const showWinner = event.overlayEnabled && event.winner && (event.winner === 'red' || event.winner === 'green')
 
+  // Tamaños de fuente forzados (mobile vs desktop)
+  const fSize = {
+    venue: isMobile ? '10px' : '14px',
+    label: isMobile ? '9px' : '14px',
+    team: isMobile ? '10px' : '20px',
+    score: isMobile ? '13px' : '24px',
+    vs: isMobile ? '11px' : '24px',
+    points: isMobile ? '7px' : '12px',
+  }
+
   return (
     <div className="mx-auto max-w-7xl px-4 py-8">
       <Button variant="ghost" size="sm" onClick={() => setView({ name: 'events' })} className="mb-4"><ArrowLeft className="mr-2 h-4 w-4" /> Volver a eventos</Button>
@@ -140,33 +159,34 @@ export function EventView({ eventId }: { eventId: string }) {
         <div>
           {showVideo && currentUrl ? (
             <div>
-              {/* CONTENEDOR PRINCIPAL (16:9 o Pantalla Completa) */}
+              {/* CONTENEDOR PRINCIPAL */}
               <div 
                 ref={overlayRef} 
                 className={`relative w-full bg-black ${isFullscreen ? 'fixed inset-0 z-50 flex items-center justify-center' : 'aspect-video'}`}
+                style={{ WebkitTextSizeAdjust: '100%' }}
               >
                 {/* VIDEO */}
                 <div className={`w-full h-full ${isFullscreen ? 'absolute inset-0' : ''}`}>
                   <VideoPlayer src={currentUrl} autoPlay />
                 </div>
 
-                {/* OVERLAYS - Tamaños ajustados para celular */}
+                {/* OVERLAYS - Tamaños forzados con inline style */}
                 {showOverlays && (
                   <div className="pointer-events-none absolute inset-0 z-10 flex flex-col justify-between p-1.5 sm:p-4 text-white" style={{ background: 'linear-gradient(to bottom, rgba(0,0,0,0.7) 0%, transparent 20%, transparent 80%, rgba(0,0,0,0.7) 100%)' }}>
                     <div className="flex justify-between items-start gap-1 sm:gap-2">
                       {event.venueName && (
-                        <span className="rounded bg-black/80 px-1.5 py-0.5 text-[10px] sm:text-sm font-bold tracking-wider shadow-lg" style={{ textShadow: '1px 1px 2px rgba(0,0,0,0.8)' }}>
+                        <span className="rounded bg-black/80 px-1.5 py-0.5 font-bold tracking-wider shadow-lg" style={{ textShadow: '1px 1px 2px rgba(0,0,0,0.8)', fontSize: fSize.venue }}>
                           📍 {event.venueName}
                         </span>
                       )}
                       <div className="flex flex-col items-end gap-0.5">
                         {event.roundLabel && (
-                          <span className="rounded border border-amber-400 bg-red-700 px-1.5 py-0.5 text-[8px] sm:text-sm font-black tracking-wider shadow-lg" style={{ textShadow: '1px 1px 2px rgba(0,0,0,0.8)' }}>
+                          <span className="rounded border border-amber-400 bg-red-700 px-1.5 py-0.5 font-black tracking-wider shadow-lg" style={{ textShadow: '1px 1px 2px rgba(0,0,0,0.8)', fontSize: fSize.label }}>
                             RONDA {event.roundLabel}
                           </span>
                         )}
                         {event.fightLabel && (
-                          <span className="rounded border border-amber-400 bg-red-700 px-1.5 py-0.5 text-[8px] sm:text-sm font-black tracking-wider shadow-lg" style={{ textShadow: '1px 1px 2px rgba(0,0,0,0.8)' }}>
+                          <span className="rounded border border-amber-400 bg-red-700 px-1.5 py-0.5 font-black tracking-wider shadow-lg" style={{ textShadow: '1px 1px 2px rgba(0,0,0,0.8)', fontSize: fSize.label }}>
                             PELEA {event.fightLabel}
                           </span>
                         )}
@@ -175,16 +195,16 @@ export function EventView({ eventId }: { eventId: string }) {
 
                     {(event.teamRedName || event.teamGreenName) && (
                       <div className="flex items-end justify-between gap-0.5 sm:gap-2">
-                        <div className="flex items-center gap-1 rounded bg-red-600 px-1.5 py-0.5 sm:px-4 sm:py-2 text-[10px] sm:text-xl font-black shadow-lg" style={{ textShadow: '1px 1px 2px rgba(0,0,0,0.8)' }}>
+                        <div className="flex items-center gap-1 rounded bg-red-600 px-1.5 py-0.5 sm:px-4 sm:py-2 font-black shadow-lg" style={{ textShadow: '1px 1px 2px rgba(0,0,0,0.8)', fontSize: fSize.team }}>
                           <span className="truncate max-w-[50px] sm:max-w-none">{event.teamRedName || 'ROJO'}</span>
-                          <span className="bg-white px-1 sm:px-3 text-xs sm:text-2xl text-red-600 rounded">{event.teamRedScore}</span>
+                          <span className="bg-white px-1 sm:px-3 text-red-600 rounded" style={{ fontSize: fSize.score }}>{event.teamRedScore}</span>
                         </div>
                         <div className="flex flex-col items-center">
-                          <span className="text-[6px] sm:text-xs font-bold text-amber-400">PUNTOS</span>
-                          <span className="text-[10px] sm:text-2xl font-black text-amber-400">VS</span>
+                          <span className="font-bold text-amber-400" style={{ fontSize: fSize.points }}>PUNTOS</span>
+                          <span className="font-black text-amber-400" style={{ fontSize: fSize.vs }}>VS</span>
                         </div>
-                        <div className="flex items-center gap-1 rounded bg-green-600 px-1.5 py-0.5 sm:px-4 sm:py-2 text-[10px] sm:text-xl font-black shadow-lg" style={{ textShadow: '1px 1px 2px rgba(0,0,0,0.8)' }}>
-                          <span className="bg-white px-1 sm:px-3 text-xs sm:text-2xl text-green-600 rounded">{event.teamGreenScore}</span>
+                        <div className="flex items-center gap-1 rounded bg-green-600 px-1.5 py-0.5 sm:px-4 sm:py-2 font-black shadow-lg" style={{ textShadow: '1px 1px 2px rgba(0,0,0,0.8)', fontSize: fSize.team }}>
+                          <span className="bg-white px-1 sm:px-3 text-green-600 rounded" style={{ fontSize: fSize.score }}>{event.teamGreenScore}</span>
                           <span className="truncate max-w-[50px] sm:max-w-none">{event.teamGreenName || 'VERDE'}</span>
                         </div>
                       </div>
@@ -196,8 +216,8 @@ export function EventView({ eventId }: { eventId: string }) {
                 {showWinner && (
                   <div className="pointer-events-none absolute inset-0 z-20 flex items-center justify-center">
                     <div className="flex flex-col items-center rounded-xl sm:rounded-3xl border-2 sm:border-4 border-amber-400 px-6 py-4 sm:px-12 sm:py-8 shadow-2xl" style={{ background: event.winner === 'red' ? 'linear-gradient(135deg, #dc2626 0%, #7f1d1d 100%)' : 'linear-gradient(135deg, #16a34a 0%, #14532d 100%)', animation: 'winnerPop 0.5s ease-out' }}>
-                      <span className="text-amber-400 text-[10px] sm:text-sm font-black tracking-widest mb-1 sm:mb-2">🏆 GANADOR 🏆</span>
-                      <span className="text-white text-2xl sm:text-5xl font-black tracking-wider text-center">{event.winner === 'red' ? (event.teamRedName || 'PARTIDO ROJO') : (event.teamGreenName || 'PARTIDO VERDE')}</span>
+                      <span className="text-amber-400 font-black tracking-widest mb-1 sm:mb-2" style={{ fontSize: isMobile ? '10px' : '14px' }}>🏆 GANADOR 🏆</span>
+                      <span className="text-white font-black tracking-wider text-center" style={{ fontSize: isMobile ? '20px' : '48px' }}>{event.winner === 'red' ? (event.teamRedName || 'PARTIDO ROJO') : (event.teamGreenName || 'PARTIDO VERDE')}</span>
                     </div>
                   </div>
                 )}
