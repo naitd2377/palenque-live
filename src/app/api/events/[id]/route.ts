@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 import { getCurrentUser, requireAdmin } from '@/lib/session'
+import { pusher } from '@/lib/pusher'
 
 export async function GET(req: NextRequest, ctx: { params: Promise<{ id: string }> }) {
   const { id } = await ctx.params
@@ -81,7 +82,7 @@ export async function PUT(req: NextRequest, ctx: { params: Promise<{ id: string 
   if (streamKey3 !== undefined) data.streamKey3 = String(streamKey3).trim()
   if (coverColor !== undefined) data.coverColor = String(coverColor).trim()
   if (status !== undefined && ['UPCOMING', 'LIVE', 'ENDED', 'CANCELLED'].includes(status)) data.status = status
-  
+
   if (overlayEnabled !== undefined) data.overlayEnabled = Boolean(overlayEnabled)
   if (venueName !== undefined) data.venueName = String(venueName).trim()
   if (roundLabel !== undefined) data.roundLabel = String(roundLabel).trim()
@@ -93,6 +94,30 @@ export async function PUT(req: NextRequest, ctx: { params: Promise<{ id: string 
   if (teamGreenScore !== undefined) data.teamGreenScore = Number(teamGreenScore) || 0
 
   const updated = await db.event.update({ where: { id }, data })
+
+  // Emitir por Pusher para actualización en tiempo real de los overlays
+  const overlayFields = ['overlayEnabled', 'venueName', 'roundLabel', 'fightLabel', 'winner', 'teamRedName', 'teamRedScore', 'teamGreenName', 'teamGreenScore']
+  const overlayChanged = Object.keys(data).some(k => overlayFields.includes(k))
+
+  if (overlayChanged) {
+    try {
+      await pusher.trigger(`event-${id}`, 'overlay-update', {
+        overlayEnabled: updated.overlayEnabled,
+        venueName: updated.venueName,
+        roundLabel: updated.roundLabel,
+        fightLabel: updated.fightLabel,
+        winner: updated.winner,
+        teamRedName: updated.teamRedName,
+        teamRedScore: updated.teamRedScore,
+        teamGreenName: updated.teamGreenName,
+        teamGreenScore: updated.teamGreenScore,
+      })
+    } catch (e) {
+      // Si Pusher falla, no bloqueamos el guardado
+      console.error('Pusher error:', e)
+    }
+  }
+
   return NextResponse.json({ event: updated })
 }
 
