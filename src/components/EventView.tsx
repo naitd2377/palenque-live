@@ -119,8 +119,7 @@ export function EventView({ eventId }: { eventId: string }) {
                       <div className="flex flex-col items-end gap-1">
                                                  {event.roundLabel && <span className="rounded border-2 border-amber-400 bg-red-700 px-3 py-0.5 text-sm font-black tracking-wider shadow-lg" style={{ textShadow: '2px 2px 4px rgba(0,0,0,0.8)' }}>RONDA {event.roundLabel}</span>}
                         {event.fightLabel && <span className="rounded border-2 border-amber-400 bg-red-700 px-3 py-0.5 text-sm font-black tracking-wider shadow-lg" style={{ textShadow: '2px 2px 4px rgba(0,0,0,0.8)' }}>PELEA {event.fightLabel}</span>}
-                                                {event.roundLabel && <span className="rounded border-2 border-amber-400 bg-red-700 px-3 py-0.5 text-sm font-black tracking-wider shadow-lg" style={{ textShadow: '2px 2px 4px rgba(0,0,0,0.8)' }}>RONDA {event.roundLabel}</span>}
-                        {event.fightLabel && <span className="rounded border-2 border-amber-400 bg-red-700 px-3 py-0.5 text-sm font-black tracking-wider shadow-lg" style={{ textShadow: '2px 2px 4px rgba(0,0,0,0.8)' }}>PELEA {event.fightLabel}</span>}
+                                                
                       </div>
                     </div>
                     {(event.teamRedName || event.teamGreenName) && (
