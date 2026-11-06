@@ -53,7 +53,6 @@ export function EventView({ eventId }: { eventId: string }) {
   const [selectedCamera, setSelectedCamera] = useState<1 | 2 | 3>(1)
   const [showControl, setShowControl] = useState(false)
   const [isFullscreen, setIsFullscreen] = useState(false)
-  const [isLandscape, setIsLandscape] = useState(true)
   const overlayRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -79,25 +78,6 @@ export function EventView({ eventId }: { eventId: string }) {
     })
     return () => { channel.unbind_all(); channel.unsubscribe(); pusher.disconnect() }
   }, [eventId])
-
-  // Detectar orientación y pantalla completa
-  useEffect(() => {
-    const checkOrientation = () => {
-      setIsLandscape(window.innerWidth > window.innerHeight)
-    }
-    checkOrientation()
-    window.addEventListener('resize', checkOrientation)
-    window.addEventListener('orientationchange', checkOrientation)
-    
-    const handler = () => setIsFullscreen(!!document.fullscreenElement)
-    document.addEventListener('fullscreenchange', handler)
-    
-    return () => {
-      window.removeEventListener('resize', checkOrientation)
-      window.removeEventListener('orientationchange', checkOrientation)
-      document.removeEventListener('fullscreenchange', handler)
-    }
-  }, [])
 
   const updateOverlay = useCallback(async (field: string, value: any) => {
     if (!event) return
@@ -134,6 +114,12 @@ export function EventView({ eventId }: { eventId: string }) {
     }
   }, [])
 
+  useEffect(() => {
+    const handler = () => setIsFullscreen(!!document.fullscreenElement)
+    document.addEventListener('fullscreenchange', handler)
+    return () => document.removeEventListener('fullscreenchange', handler)
+  }, [])
+
   if (loading) return <div className="mx-auto max-w-5xl px-4 py-8"><Skeleton className="mb-4 h-8 w-32" /><Skeleton className="aspect-video w-full rounded-xl" /></div>
   if (!event) return <div className="mx-auto max-w-5xl px-4 py-16 text-center"><h2 className="text-2xl font-bold">Evento no encontrado</h2><Button className="mt-6" onClick={() => setView({ name: 'events' })}>Volver</Button></div>
 
@@ -144,9 +130,8 @@ export function EventView({ eventId }: { eventId: string }) {
   const currentUrl = selectedCamera === 1 ? event.streamUrl : selectedCamera === 2 ? event.streamUrl2 : event.streamUrl3
   const showVideo = canWatch && !!currentUrl
   
-  // ✅ CLAVE: Overlays solo en horizontal (16:9) o pantalla completa
-  const showOverlays = event.overlayEnabled && (isLandscape || isFullscreen) && (event.venueName || event.roundLabel || event.fightLabel || event.teamRedName || event.teamGreenName)
-  const showWinner = event.overlayEnabled && (isLandscape || isFullscreen) && event.winner && (event.winner === 'red' || event.winner === 'green')
+  const showOverlays = event.overlayEnabled && (event.venueName || event.roundLabel || event.fightLabel || event.teamRedName || event.teamGreenName)
+  const showWinner = event.overlayEnabled && event.winner && (event.winner === 'red' || event.winner === 'green')
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-8">
@@ -159,7 +144,7 @@ export function EventView({ eventId }: { eventId: string }) {
               {/* CONTENEDOR PRINCIPAL (16:9 o Pantalla Completa) */}
               <div 
                 ref={overlayRef} 
-                className={`relative w-full bg-black ${isFullscreen ? 'h-screen' : ''}`} 
+                className={`relative w-full bg-black flex items-center justify-center ${isFullscreen ? 'h-screen' : ''}`} 
                 style={!isFullscreen ? { aspectRatio: '16 / 9' } : {}}
               >
                 {/* VIDEO */}
@@ -167,7 +152,7 @@ export function EventView({ eventId }: { eventId: string }) {
                   <VideoPlayer src={currentUrl} autoPlay />
                 </div>
 
-                {/* OVERLAYS - Solo en horizontal o fullscreen */}
+                {/* OVERLAYS - Ajustados para no salirse de la imagen */}
                 {showOverlays && (
                   <div className="pointer-events-none absolute inset-0 z-10 flex flex-col justify-between p-2 sm:p-4 text-white" style={{ background: 'linear-gradient(to bottom, rgba(0,0,0,0.7) 0%, transparent 20%, transparent 80%, rgba(0,0,0,0.7) 100%)' }}>
                     <div className="flex justify-between items-start gap-2">
@@ -209,7 +194,7 @@ export function EventView({ eventId }: { eventId: string }) {
                   </div>
                 )}
 
-                {/* GANADOR - Solo en horizontal o fullscreen */}
+                {/* GANADOR */}
                 {showWinner && (
                   <div className="pointer-events-none absolute inset-0 z-20 flex items-center justify-center">
                     <div className="flex flex-col items-center rounded-xl sm:rounded-3xl border-2 sm:border-4 border-amber-400 px-6 py-4 sm:px-12 sm:py-8 shadow-2xl" style={{ background: event.winner === 'red' ? 'linear-gradient(135deg, #dc2626 0%, #7f1d1d 100%)' : 'linear-gradient(135deg, #16a34a 0%, #14532d 100%)', animation: 'winnerPop 0.5s ease-out' }}>
