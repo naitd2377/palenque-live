@@ -145,28 +145,28 @@ export function EventView({ eventId }: { eventId: string }) {
                 ref={overlayRef} 
                 className={`relative w-full bg-black ${isFullscreen ? 'fixed inset-0 z-50 flex items-center justify-center' : 'aspect-video'}`}
               >
-                {/* VIDEO (Rellena el contenedor) */}
+                {/* VIDEO */}
                 <div className={`w-full h-full ${isFullscreen ? 'absolute inset-0' : ''}`}>
                   <VideoPlayer src={currentUrl} autoPlay />
                 </div>
 
-                {/* OVERLAYS */}
+                {/* OVERLAYS - Tamaños ajustados para celular */}
                 {showOverlays && (
-                  <div className="pointer-events-none absolute inset-0 z-10 flex flex-col justify-between p-2 sm:p-4 text-white" style={{ background: 'linear-gradient(to bottom, rgba(0,0,0,0.7) 0%, transparent 20%, transparent 80%, rgba(0,0,0,0.7) 100%)' }}>
-                    <div className="flex justify-between items-start gap-2">
+                  <div className="pointer-events-none absolute inset-0 z-10 flex flex-col justify-between p-1.5 sm:p-4 text-white" style={{ background: 'linear-gradient(to bottom, rgba(0,0,0,0.7) 0%, transparent 20%, transparent 80%, rgba(0,0,0,0.7) 100%)' }}>
+                    <div className="flex justify-between items-start gap-1 sm:gap-2">
                       {event.venueName && (
-                        <span className="rounded bg-black/80 px-2 py-0.5 text-[10px] sm:text-sm font-bold tracking-wider shadow-lg" style={{ textShadow: '1px 1px 2px rgba(0,0,0,0.8)' }}>
+                        <span className="rounded bg-black/80 px-1.5 py-0.5 text-[10px] sm:text-sm font-bold tracking-wider shadow-lg" style={{ textShadow: '1px 1px 2px rgba(0,0,0,0.8)' }}>
                           📍 {event.venueName}
                         </span>
                       )}
-                      <div className="flex flex-col items-end gap-0.5 sm:gap-1">
+                      <div className="flex flex-col items-end gap-0.5">
                         {event.roundLabel && (
-                          <span className="rounded border border-amber-400 bg-red-700 px-2 py-0.5 text-[10px] sm:text-sm font-black tracking-wider shadow-lg" style={{ textShadow: '1px 1px 2px rgba(0,0,0,0.8)' }}>
+                          <span className="rounded border border-amber-400 bg-red-700 px-1.5 py-0.5 text-[8px] sm:text-sm font-black tracking-wider shadow-lg" style={{ textShadow: '1px 1px 2px rgba(0,0,0,0.8)' }}>
                             RONDA {event.roundLabel}
                           </span>
                         )}
                         {event.fightLabel && (
-                          <span className="rounded border border-amber-400 bg-red-700 px-2 py-0.5 text-[10px] sm:text-sm font-black tracking-wider shadow-lg" style={{ textShadow: '1px 1px 2px rgba(0,0,0,0.8)' }}>
+                          <span className="rounded border border-amber-400 bg-red-700 px-1.5 py-0.5 text-[8px] sm:text-sm font-black tracking-wider shadow-lg" style={{ textShadow: '1px 1px 2px rgba(0,0,0,0.8)' }}>
                             PELEA {event.fightLabel}
                           </span>
                         )}
@@ -174,18 +174,18 @@ export function EventView({ eventId }: { eventId: string }) {
                     </div>
 
                     {(event.teamRedName || event.teamGreenName) && (
-                      <div className="flex items-end justify-between gap-1 sm:gap-2">
-                        <div className="flex items-center gap-1 sm:gap-2 rounded bg-red-600 px-2 py-1 sm:px-4 sm:py-2 text-sm sm:text-xl font-black shadow-lg" style={{ textShadow: '1px 1px 2px rgba(0,0,0,0.8)' }}>
-                          <span className="truncate max-w-[60px] sm:max-w-none">{event.teamRedName || 'ROJO'}</span>
-                          <span className="bg-white px-1.5 sm:px-3 text-base sm:text-2xl text-red-600 rounded">{event.teamRedScore}</span>
+                      <div className="flex items-end justify-between gap-0.5 sm:gap-2">
+                        <div className="flex items-center gap-1 rounded bg-red-600 px-1.5 py-0.5 sm:px-4 sm:py-2 text-[10px] sm:text-xl font-black shadow-lg" style={{ textShadow: '1px 1px 2px rgba(0,0,0,0.8)' }}>
+                          <span className="truncate max-w-[50px] sm:max-w-none">{event.teamRedName || 'ROJO'}</span>
+                          <span className="bg-white px-1 sm:px-3 text-xs sm:text-2xl text-red-600 rounded">{event.teamRedScore}</span>
                         </div>
                         <div className="flex flex-col items-center">
-                          <span className="text-[8px] sm:text-xs font-bold text-amber-400">PUNTOS</span>
-                          <span className="text-base sm:text-2xl font-black text-amber-400">VS</span>
+                          <span className="text-[6px] sm:text-xs font-bold text-amber-400">PUNTOS</span>
+                          <span className="text-[10px] sm:text-2xl font-black text-amber-400">VS</span>
                         </div>
-                        <div className="flex items-center gap-1 sm:gap-2 rounded bg-green-600 px-2 py-1 sm:px-4 sm:py-2 text-sm sm:text-xl font-black shadow-lg" style={{ textShadow: '1px 1px 2px rgba(0,0,0,0.8)' }}>
-                          <span className="bg-white px-1.5 sm:px-3 text-base sm:text-2xl text-green-600 rounded">{event.teamGreenScore}</span>
-                          <span className="truncate max-w-[60px] sm:max-w-none">{event.teamGreenName || 'VERDE'}</span>
+                        <div className="flex items-center gap-1 rounded bg-green-600 px-1.5 py-0.5 sm:px-4 sm:py-2 text-[10px] sm:text-xl font-black shadow-lg" style={{ textShadow: '1px 1px 2px rgba(0,0,0,0.8)' }}>
+                          <span className="bg-white px-1 sm:px-3 text-xs sm:text-2xl text-green-600 rounded">{event.teamGreenScore}</span>
+                          <span className="truncate max-w-[50px] sm:max-w-none">{event.teamGreenName || 'VERDE'}</span>
                         </div>
                       </div>
                     )}
