@@ -129,7 +129,6 @@ export function EventView({ eventId }: { eventId: string }) {
   const cameras = [{ id: 1, url: event.streamUrl }, { id: 2, url: event.streamUrl2 }, { id: 3, url: event.streamUrl3 }].filter((c) => c.url)
   const currentUrl = selectedCamera === 1 ? event.streamUrl : selectedCamera === 2 ? event.streamUrl2 : event.streamUrl3
   const showVideo = canWatch && !!currentUrl
-  
   const showOverlays = event.overlayEnabled && (event.venueName || event.roundLabel || event.fightLabel || event.teamRedName || event.teamGreenName)
   const showWinner = event.overlayEnabled && event.winner && (event.winner === 'red' || event.winner === 'green')
 
@@ -144,15 +143,14 @@ export function EventView({ eventId }: { eventId: string }) {
               {/* CONTENEDOR PRINCIPAL (16:9 o Pantalla Completa) */}
               <div 
                 ref={overlayRef} 
-                className={`relative w-full bg-black flex items-center justify-center ${isFullscreen ? 'h-screen' : ''}`} 
-                style={!isFullscreen ? { aspectRatio: '16 / 9' } : {}}
+                className={`relative w-full bg-black ${isFullscreen ? 'fixed inset-0 z-50 flex items-center justify-center' : 'aspect-video'}`}
               >
-                {/* VIDEO */}
-                <div className="absolute inset-0 w-full h-full">
+                {/* VIDEO (Rellena el contenedor) */}
+                <div className={`w-full h-full ${isFullscreen ? 'absolute inset-0' : ''}`}>
                   <VideoPlayer src={currentUrl} autoPlay />
                 </div>
 
-                {/* OVERLAYS - Ajustados para no salirse de la imagen */}
+                {/* OVERLAYS */}
                 {showOverlays && (
                   <div className="pointer-events-none absolute inset-0 z-10 flex flex-col justify-between p-2 sm:p-4 text-white" style={{ background: 'linear-gradient(to bottom, rgba(0,0,0,0.7) 0%, transparent 20%, transparent 80%, rgba(0,0,0,0.7) 100%)' }}>
                     <div className="flex justify-between items-start gap-2">
