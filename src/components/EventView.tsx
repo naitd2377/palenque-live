@@ -13,6 +13,7 @@ import { VideoPlayer } from './VideoPlayer'
 import { ChatBox } from './ChatBox'
 import { useApp } from '@/lib/store'
 import { toast } from 'sonner'
+import Pusher from 'pusher-js'
 
 type EventDetail = {
   id: string
@@ -52,6 +53,7 @@ export function EventView({ eventId }: { eventId: string }) {
   const [selectedCamera, setSelectedCamera] = useState<1 | 2 | 3>(1)
   const [showControl, setShowControl] = useState(false)
 
+  // Cargar evento inicial
   useEffect(() => {
     let cancelled = false
     ;(async () => {
@@ -64,9 +66,31 @@ export function EventView({ eventId }: { eventId: string }) {
     return () => { cancelled = true }
   }, [eventId, user])
 
+  // Escuchar cambios en tiempo real (Pusher) para overlays
+  useEffect(() => {
+    const pusherKey = process.env.NEXT_PUBLIC_PUSHER_KEY
+    const pusherCluster = process.env.NEXT_PUBLIC_PUSHER_CLUSTER || 'mt1'
+    if (!pusherKey) return
+
+    const pusher = new Pusher(pusherKey, { cluster: pusherCluster })
+    const channel = pusher.subscribe(`event-${eventId}`)
+    channel.bind('overlay-update', (msg: any) => {
+      setEvent(prev => prev ? { ...prev, ...msg } : null)
+    })
+
+    return () => {
+      channel.unbind_all()
+      channel.unsubscribe()
+      pusher.disconnect()
+    }
+  }, [eventId])
+
+  // Función para actualizar overlay en tiempo real
   const updateOverlay = useCallback(async (field: string, value: any) => {
     if (!event) return
+    // Actualizar estado local inmediatamente
     setEvent(prev => prev ? { ...prev, [field]: value } : null)
+    // Guardar en el servidor (esto dispara Pusher para todos los clientes)
     try {
       await fetch(`/api/events/${eventId}`, {
         method: 'PUT',
@@ -111,28 +135,52 @@ export function EventView({ eventId }: { eventId: string }) {
               <div className="relative">
                 <VideoPlayer src={currentUrl} autoPlay className="shadow-xl" />
 
-                {/* OVERLAY BANNER */}
+                {/* OVERLAY BANNER - Estilo TV profesional */}
                 {event.overlayEnabled && (event.venueName || event.roundLabel || event.fightLabel || event.teamRedName || event.teamGreenName) && (
                   <div className="pointer-events-none absolute inset-0 flex flex-col justify-between p-4 text-white" style={{ background: 'linear-gradient(to bottom, rgba(0,0,0,0.7) 0%, transparent 25%, transparent 75%, rgba(0,0,0,0.7) 100%)' }}>
+
+                    {/* ARRIBA: Lugar (izquierda) y Ronda+Pelea (derecha) */}
                     <div className="flex justify-between items-start">
-                      {event.venueName && <span className="rounded bg-black/80 px-3 py-1 text-sm font-bold tracking-wider shadow-lg" style={{ textShadow: '2px 2px 4px rgba(0,0,0,0.8)' }}>📍 {event.venueName}</span>}
+                      {event.venueName && (
+                        <span className="rounded bg-black/80 px-3 py-1 text-sm font-bold tracking-wider shadow-lg" style={{ textShadow: '2px 2px 4px rgba(0,0,0,0.8)' }}>
+                          📍 {event.venueName}
+                        </span>
+                      )}
                       <div className="flex flex-col items-end gap-1">
-                                                 {event.roundLabel && <span className="rounded border-2 border-amber-400 bg-red-700 px-3 py-0.5 text-sm font-black tracking-wider shadow-lg" style={{ textShadow: '2px 2px 4px rgba(0,0,0,0.8)' }}>RONDA {event.roundLabel}</span>}
-                        {event.fightLabel && <span className="rounded border-2 border-amber-400 bg-red-700 px-3 py-0.5 text-sm font-black tracking-wider shadow-lg" style={{ textShadow: '2px 2px 4px rgba(0,0,0,0.8)' }}>PELEA {event.fightLabel}</span>}
-                                                
+                        {event.roundLabel && (
+                          <span className="rounded border-2 border-amber-400 bg-red-700 px-3 py-0.5 text-sm font-black tracking-wider shadow-lg" style={{ textShadow: '2px 2px 4px rgba(0,0,0,0.8)' }}>
+                            RONDA {event.roundLabel}
+                          </span>
+                        )}
+                        {event.fightLabel && (
+                          <span className="rounded border-2 border-amber-400 bg-red-700 px-3 py-0.5 text-sm font-black tracking-wider shadow-lg" style={{ textShadow: '2px 2px 4px rgba(0,0,0,0.8)' }}>
+                            PELEA {event.fightLabel}
+                          </span>
+                        )}
                       </div>
                     </div>
+
+                    {/* ABAJO: Marcador con estilo profesional */}
                     {(event.teamRedName || event.teamGreenName) && (
                       <div className="flex items-end justify-between gap-2">
-                        <div className="flex items-center gap-2 rounded bg-red-600 px-4 py-2 text-xl font-black shadow-lg" style={{ textShadow: '2px 2px 4px rgba(0,0,0,0.8)' }}><span>{event.teamRedName || 'ROJO'}</span><span className="bg-white px-3 text-2xl text-red-600 rounded">{event.teamRedScore}</span></div>
-                        <div className="flex flex-col items-center"><span className="text-xs font-bold text-amber-400">PUNTOS</span><span className="text-2xl font-black text-amber-400">VS</span></div>
-                        <div className="flex items-center gap-2 rounded bg-green-600 px-4 py-2 text-xl font-black shadow-lg" style={{ textShadow: '2px 2px 4px rgba(0,0,0,0.8)' }}><span className="bg-white px-3 text-2xl text-green-600 rounded">{event.teamGreenScore}</span><span>{event.teamGreenName || 'VERDE'}</span></div>
+                        <div className="flex items-center gap-2 rounded bg-red-600 px-4 py-2 text-xl font-black shadow-lg" style={{ textShadow: '2px 2px 4px rgba(0,0,0,0.8)' }}>
+                          <span>{event.teamRedName || 'ROJO'}</span>
+                          <span className="bg-white px-3 text-2xl text-red-600 rounded">{event.teamRedScore}</span>
+                        </div>
+                        <div className="flex flex-col items-center">
+                          <span className="text-xs font-bold text-amber-400" style={{ textShadow: '2px 2px 4px rgba(0,0,0,0.8)' }}>PUNTOS</span>
+                          <span className="text-2xl font-black text-amber-400" style={{ textShadow: '2px 2px 4px rgba(0,0,0,0.8)' }}>VS</span>
+                        </div>
+                        <div className="flex items-center gap-2 rounded bg-green-600 px-4 py-2 text-xl font-black shadow-lg" style={{ textShadow: '2px 2px 4px rgba(0,0,0,0.8)' }}>
+                          <span className="bg-white px-3 text-2xl text-green-600 rounded">{event.teamGreenScore}</span>
+                          <span>{event.teamGreenName || 'VERDE'}</span>
+                        </div>
                       </div>
                     )}
                   </div>
                 )}
 
-                {/* ANUNCIO DE GANADOR */}
+                {/* ANUNCIO DE GANADOR - Pantalla completa */}
                 {event.overlayEnabled && event.winner && (event.winner === 'red' || event.winner === 'green') && (
                   <div className="pointer-events-none absolute inset-0 z-20 flex items-center justify-center">
                     <div className="flex flex-col items-center rounded-3xl border-4 border-amber-400 px-12 py-8 shadow-2xl" style={{ background: event.winner === 'red' ? 'linear-gradient(135deg, #dc2626 0%, #7f1d1d 100%)' : 'linear-gradient(135deg, #16a34a 0%, #14532d 100%)', animation: 'winnerPop 0.5s ease-out' }}>
@@ -143,43 +191,115 @@ export function EventView({ eventId }: { eventId: string }) {
                 )}
               </div>
 
-              {/* Panel de Control Admin */}
+              {/* Botón de control de overlays (SOLO ADMIN) */}
               {user?.role === 'ADMIN' && (
-                <Button size="sm" variant="outline" className="mt-2 bg-stone-900 text-white hover:bg-stone-800 border-stone-700" onClick={() => setShowControl(!showControl)}>
-                  <Settings className="mr-1 h-3 w-3" /> {showControl ? 'Cerrar control' : 'Control de Overlays'}
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="mt-2 bg-stone-900 text-white hover:bg-stone-800 border-stone-700"
+                  onClick={() => setShowControl(!showControl)}
+                >
+                  <Settings className="mr-1 h-3 w-3" />
+                  {showControl ? 'Cerrar control' : 'Control de Overlays'}
                 </Button>
               )}
 
+              {/* Panel de control flotante (SOLO ADMIN) */}
               {user?.role === 'ADMIN' && showControl && (
                 <div className="mt-2 rounded-lg border-2 border-stone-700 bg-stone-900 p-4 text-white shadow-xl">
-                  <div className="mb-3 flex items-center justify-between"><h3 className="text-sm font-bold text-amber-400">🎮 CONTROL EN VIVO</h3><button onClick={() => setShowControl(false)} className="text-stone-400 hover:text-white"><X className="h-4 w-4" /></button></div>
-                  
+                  <div className="mb-3 flex items-center justify-between">
+                    <h3 className="text-sm font-bold text-amber-400">🎮 CONTROL EN VIVO</h3>
+                    <button onClick={() => setShowControl(false)} className="text-stone-400 hover:text-white"><X className="h-4 w-4" /></button>
+                  </div>
+
+                  {/* Activar/Desactivar */}
                   <div className="mb-3 flex items-center justify-between rounded bg-stone-800 p-2">
-                    <div className="flex items-center gap-2">{event.overlayEnabled ? <Eye className="h-4 w-4 text-green-500" /> : <EyeOff className="h-4 w-4 text-stone-500" />}<span className="text-xs font-semibold">Overlay visible</span></div>
-                    <Switch checked={event.overlayEnabled} onCheckedChange={(v) => updateOverlay('overlayEnabled', v)} />
+                    <div className="flex items-center gap-2">
+                      {event.overlayEnabled ? <Eye className="h-4 w-4 text-green-500" /> : <EyeOff className="h-4 w-4 text-stone-500" />}
+                      <span className="text-xs font-semibold">Overlay visible</span>
+                    </div>
+                    <Switch
+                      checked={event.overlayEnabled}
+                      onCheckedChange={(v) => updateOverlay('overlayEnabled', v)}
+                    />
                   </div>
 
+                  {/* Campos de texto */}
                   <div className="grid grid-cols-3 gap-2">
-                    <div><Label className="text-[10px] text-stone-400">LUGAR</Label><Input value={event.venueName || ''} onChange={(e) => updateOverlay('venueName', e.target.value)} className="h-8 bg-stone-800 border-stone-700 text-white text-xs" /></div>
-                    <div><Label className="text-[10px] text-stone-400">RONDA</Label><Input value={event.roundLabel || ''} onChange={(e) => updateOverlay('roundLabel', e.target.value)} className="h-8 bg-stone-800 border-stone-700 text-white text-xs" /></div>
-                    <div><Label className="text-[10px] text-stone-400">PELEA</Label><Input value={event.fightLabel || ''} onChange={(e) => updateOverlay('fightLabel', e.target.value)} className="h-8 bg-stone-800 border-stone-700 text-white text-xs" /></div>
-                  </div>
-
-                  <div className="mt-2 rounded bg-red-950/50 p-2 border border-red-800">
-                    <div className="flex gap-2">
-                      <Input value={event.teamRedName || ''} onChange={(e) => updateOverlay('teamRedName', e.target.value)} placeholder="Nombre Rojo" className="h-8 bg-stone-800 border-stone-700 text-white text-xs flex-1" />
-                      <Button size="sm" variant="outline" className="h-8 w-8 p-0 bg-stone-800 border-stone-700 text-white" onClick={() => updateOverlay('teamRedScore', Math.max(0, event.teamRedScore - 1))}><Minus className="h-3 w-3" /></Button>
-                      <span className="w-8 text-center text-lg font-bold">{event.teamRedScore}</span>
-                      <Button size="sm" variant="outline" className="h-8 w-8 p-0 bg-stone-800 border-stone-700 text-white" onClick={() => updateOverlay('teamRedScore', event.teamRedScore + 1)}><Plus className="h-3 w-3" /></Button>
+                    <div>
+                      <Label className="text-[10px] text-stone-400">LUGAR</Label>
+                      <Input
+                        value={event.venueName || ''}
+                        onChange={(e) => updateOverlay('venueName', e.target.value)}
+                        placeholder="Tepatepec"
+                        className="h-8 bg-stone-800 border-stone-700 text-white text-xs"
+                      />
+                    </div>
+                    <div>
+                      <Label className="text-[10px] text-stone-400">RONDA</Label>
+                      <Input
+                        value={event.roundLabel || ''}
+                        onChange={(e) => updateOverlay('roundLabel', e.target.value)}
+                        placeholder="2"
+                        className="h-8 bg-stone-800 border-stone-700 text-white text-xs"
+                      />
+                    </div>
+                    <div>
+                      <Label className="text-[10px] text-stone-400">PELEA</Label>
+                      <Input
+                        value={event.fightLabel || ''}
+                        onChange={(e) => updateOverlay('fightLabel', e.target.value)}
+                        placeholder="25"
+                        className="h-8 bg-stone-800 border-stone-700 text-white text-xs"
+                      />
                     </div>
                   </div>
 
-                  <div className="mt-2 rounded bg-green-950/50 p-2 border border-green-800">
+                  {/* Marcador Rojo */}
+                  <div className="mt-2 rounded bg-red-950/50 p-2 border border-red-800">
+                    <Label className="text-[10px] text-red-400 font-bold">PARTIDO ROJO</Label>
                     <div className="flex gap-2">
-                      <Input value={event.teamGreenName || ''} onChange={(e) => updateOverlay('teamGreenName', e.target.value)} placeholder="Nombre Verde" className="h-8 bg-stone-800 border-stone-700 text-white text-xs flex-1" />
-                      <Button size="sm" variant="outline" className="h-8 w-8 p-0 bg-stone-800 border-stone-700 text-white" onClick={() => updateOverlay('teamGreenScore', Math.max(0, event.teamGreenScore - 1))}><Minus className="h-3 w-3" /></Button>
-                      <span className="w-8 text-center text-lg font-bold">{event.teamGreenScore}</span>
-                      <Button size="sm" variant="outline" className="h-8 w-8 p-0 bg-stone-800 border-stone-700 text-white" onClick={() => updateOverlay('teamGreenScore', event.teamGreenScore + 1)}><Plus className="h-3 w-3" /></Button>
+                      <Input
+                        value={event.teamRedName || ''}
+                        onChange={(e) => updateOverlay('teamRedName', e.target.value)}
+                        placeholder="Nombre Rojo"
+                        className="h-8 bg-stone-800 border-stone-700 text-white text-xs flex-1"
+                      />
+                      <div className="flex items-center gap-1">
+                        <Button size="sm" variant="outline" className="h-8 w-8 p-0 bg-stone-800 border-stone-700 text-white"
+                          onClick={() => updateOverlay('teamRedScore', Math.max(0, event.teamRedScore - 1))}>
+                          <Minus className="h-3 w-3" />
+                        </Button>
+                        <span className="w-8 text-center text-lg font-bold">{event.teamRedScore}</span>
+                        <Button size="sm" variant="outline" className="h-8 w-8 p-0 bg-stone-800 border-stone-700 text-white"
+                          onClick={() => updateOverlay('teamRedScore', event.teamRedScore + 1)}>
+                          <Plus className="h-3 w-3" />
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Marcador Verde */}
+                  <div className="mt-2 rounded bg-green-950/50 p-2 border border-green-800">
+                    <Label className="text-[10px] text-green-400 font-bold">PARTIDO VERDE</Label>
+                    <div className="flex gap-2">
+                      <Input
+                        value={event.teamGreenName || ''}
+                        onChange={(e) => updateOverlay('teamGreenName', e.target.value)}
+                        placeholder="Nombre Verde"
+                        className="h-8 bg-stone-800 border-stone-700 text-white text-xs flex-1"
+                      />
+                      <div className="flex items-center gap-1">
+                        <Button size="sm" variant="outline" className="h-8 w-8 p-0 bg-stone-800 border-stone-700 text-white"
+                          onClick={() => updateOverlay('teamGreenScore', Math.max(0, event.teamGreenScore - 1))}>
+                          <Minus className="h-3 w-3" />
+                        </Button>
+                        <span className="w-8 text-center text-lg font-bold">{event.teamGreenScore}</span>
+                        <Button size="sm" variant="outline" className="h-8 w-8 p-0 bg-stone-800 border-stone-700 text-white"
+                          onClick={() => updateOverlay('teamGreenScore', event.teamGreenScore + 1)}>
+                          <Plus className="h-3 w-3" />
+                        </Button>
+                      </div>
                     </div>
                   </div>
 
@@ -187,34 +307,71 @@ export function EventView({ eventId }: { eventId: string }) {
                   <div className="mt-3 border-t border-stone-700 pt-3">
                     <Label className="text-[10px] text-stone-400 mb-2 block">DECLARAR GANADOR</Label>
                     <div className="grid grid-cols-2 gap-2">
-                      <Button size="sm" className={`h-10 ${event.winner === 'red' ? 'bg-red-600 text-white' : 'bg-stone-800 border border-red-800 text-red-400'}`} onClick={() => updateOverlay('winner', event.winner === 'red' ? '' : 'red')}>🏆 {event.teamRedName || 'ROJO'} GANA</Button>
-                      <Button size="sm" className={`h-10 ${event.winner === 'green' ? 'bg-green-600 text-white' : 'bg-stone-800 border border-green-800 text-green-400'}`} onClick={() => updateOverlay('winner', event.winner === 'green' ? '' : 'green')}>🏆 {event.teamGreenName || 'VERDE'} GANA</Button>
+                      <Button
+                        size="sm"
+                        className={`h-10 ${event.winner === 'red' ? 'bg-red-600 hover:bg-red-700 text-white' : 'bg-stone-800 border border-red-800 text-red-400 hover:bg-red-950'}`}
+                        onClick={() => updateOverlay('winner', event.winner === 'red' ? '' : 'red')}
+                      >
+                        🏆 {event.teamRedName || 'ROJO'} GANA
+                      </Button>
+                      <Button
+                        size="sm"
+                        className={`h-10 ${event.winner === 'green' ? 'bg-green-600 hover:bg-green-700 text-white' : 'bg-stone-800 border border-green-800 text-green-400 hover:bg-green-950'}`}
+                        onClick={() => updateOverlay('winner', event.winner === 'green' ? '' : 'green')}
+                      >
+                        🏆 {event.teamGreenName || 'VERDE'} GANA
+                      </Button>
                     </div>
-                    {event.winner && <Button size="sm" variant="outline" className="mt-2 w-full bg-stone-800 border-stone-600 text-stone-300" onClick={() => updateOverlay('winner', '')}>✕ Quitar ganador</Button>}
+                    {event.winner && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="mt-2 w-full bg-stone-800 border-stone-600 text-stone-300 hover:bg-stone-700"
+                        onClick={() => updateOverlay('winner', '')}
+                      >
+                        ✕ Quitar ganador
+                      </Button>
+                    )}
                   </div>
                 </div>
               )}
 
+              {/* Selector de cámara */}
               {cameras.length > 1 && (
                 <div className="mt-3 flex flex-wrap gap-2">
                   <span className="text-sm text-muted-foreground self-center mr-2">Cámara:</span>
-                  {cameras.map((cam) => (<Button key={cam.id} size="sm" variant={selectedCamera === cam.id ? 'default' : 'outline'} className={selectedCamera === cam.id ? 'bg-red-700 hover:bg-red-800' : ''} onClick={() => setSelectedCamera(cam.id as 1 | 2 | 3)}><Camera className="mr-1 h-3 w-3" />{cam.id === 1 ? 'Principal' : `Cámara ${cam.id}`}</Button>))}
+                  {cameras.map((cam) => (
+                    <Button key={cam.id} size="sm" variant={selectedCamera === cam.id ? 'default' : 'outline'} className={selectedCamera === cam.id ? 'bg-red-700 hover:bg-red-800' : ''} onClick={() => setSelectedCamera(cam.id as 1 | 2 | 3)}>
+                      <Camera className="mr-1 h-3 w-3" />{cam.id === 1 ? 'Principal' : `Cámara ${cam.id}`}
+                    </Button>
+                  ))}
                 </div>
               )}
             </div>
           ) : canWatch ? (
-            <div className="flex aspect-video w-full flex-col items-center justify-center rounded-xl text-white" style={{ background: `linear-gradient(135deg, ${event.coverColor} 0%, #1c1917 100%)` }}><Radio className="mb-3 h-12 w-12 animate-pulse" /><p className="text-xl font-semibold">Transmisión no disponible</p></div>
+            <div className="flex aspect-video w-full flex-col items-center justify-center rounded-xl text-white" style={{ background: `linear-gradient(135deg, ${event.coverColor} 0%, #1c1917 100%)` }}>
+              <Radio className="mb-3 h-12 w-12 animate-pulse" />
+              <p className="text-xl font-semibold">Transmisión no disponible</p>
+              <p className="mt-1 text-sm text-white/70">{event.status === 'UPCOMING' ? `El evento inicia el ${dateStr} a las ${timeStr}` : 'El administrador aún no configura las URLs de streaming.'}</p>
+            </div>
           ) : (
             <div className="relative flex aspect-video w-full flex-col items-center justify-center overflow-hidden rounded-xl text-white" style={{ background: `linear-gradient(135deg, ${event.coverColor} 0%, #1c1917 100%)` }}>
-              <Lock className="mb-3 h-12 w-12" /><p className="text-xl font-semibold">Contenido bloqueado</p>
-              <Button size="lg" className="mt-5 bg-amber-500 text-stone-900" disabled={buying} onClick={buy}>{buying ? 'Redirigiendo…' : `Comprar — $${event.price.toFixed(0)} ${event.currency}`}</Button>
+              <div className="absolute inset-0 opacity-10" style={{ backgroundImage: 'radial-gradient(circle at 50% 50%, white 1px, transparent 1px)', backgroundSize: '24px 24px' }} />
+              <Lock className="mb-3 h-12 w-12" />
+              <p className="text-xl font-semibold">Contenido bloqueado</p>
+              <p className="mt-1 max-w-md text-center text-sm text-white/70">Compra acceso a este evento para ver la transmisión en vivo y participar del chat.</p>
+              <Button size="lg" className="mt-5 bg-amber-500 text-stone-900" disabled={buying} onClick={buy}>
+                {buying ? 'Rediridiendo…' : `Comprar — $${event.price.toFixed(0)} ${event.currency}`}
+              </Button>
             </div>
           )}
         </div>
 
+        {/* Chat */}
         {canWatch && showVideo && <div className="lg:h-full"><ChatBox eventId={event.id} /></div>}
       </div>
 
+      {/* Event info */}
       <Card className="border-border/60 mt-6">
         <CardHeader>
           <div className="flex flex-wrap items-start justify-between gap-3">
@@ -234,7 +391,12 @@ export function EventView({ eventId }: { eventId: string }) {
         </CardHeader>
         <CardContent>
           <p className="leading-relaxed text-foreground/90">{event.description}</p>
-          {user?.role === 'ADMIN' && event.rtmpUrl && (<div className="mt-6 rounded-lg border border-amber-300 bg-amber-50 p-4"><p className="mb-2 flex items-center gap-2 text-sm font-semibold text-amber-800"><Shield className="h-4 w-4" /> Config (solo admin)</p><div className="text-xs font-mono break-all">{event.rtmpUrl} / {event.streamKey}</div></div>)}
+          {user?.role === 'ADMIN' && event.rtmpUrl && (
+            <div className="mt-6 rounded-lg border border-amber-300 bg-amber-50 p-4">
+              <p className="mb-2 flex items-center gap-2 text-sm font-semibold text-amber-800"><Shield className="h-4 w-4" /> Config (solo admin)</p>
+              <div className="text-xs font-mono break-all">{event.rtmpUrl} / {event.streamKey}</div>
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>
