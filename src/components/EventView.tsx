@@ -80,7 +80,6 @@ export function EventView({ eventId }: { eventId: string }) {
     return () => { channel.unbind_all(); channel.unsubscribe(); pusher.disconnect() }
   }, [eventId])
 
-  // Detectar si es móvil para forzar tamaños de fuente
   useEffect(() => {
     const checkMobile = () => setIsMobile(window.innerWidth < 640)
     checkMobile()
@@ -141,7 +140,6 @@ export function EventView({ eventId }: { eventId: string }) {
   const showOverlays = event.overlayEnabled && (event.venueName || event.roundLabel || event.fightLabel || event.teamRedName || event.teamGreenName)
   const showWinner = event.overlayEnabled && event.winner && (event.winner === 'red' || event.winner === 'green')
 
-  // Tamaños de fuente forzados (mobile vs desktop)
   const fSize = {
     venue: isMobile ? '10px' : '14px',
     label: isMobile ? '9px' : '14px',
@@ -165,14 +163,14 @@ export function EventView({ eventId }: { eventId: string }) {
                 className={`relative w-full bg-black ${isFullscreen ? 'fixed inset-0 z-50 flex items-center justify-center' : 'aspect-video'}`}
                 style={{ WebkitTextSizeAdjust: '100%' }}
               >
-                {/* VIDEO */}
-                <div className={`w-full h-full ${isFullscreen ? 'absolute inset-0' : ''}`}>
+                {/* VIDEO (Forzado a z-index 1) */}
+                <div className={`w-full h-full ${isFullscreen ? 'absolute inset-0' : ''}`} style={{ position: 'absolute', top: 0, left: 0, zIndex: 1 }}>
                   <VideoPlayer src={currentUrl} autoPlay />
                 </div>
 
-                {/* OVERLAYS - Tamaños forzados con inline style */}
+                {/* OVERLAYS (Forzado a z-index 20 para que tape al video) */}
                 {showOverlays && (
-                  <div className="pointer-events-none absolute inset-0 z-10 flex flex-col justify-between p-1.5 sm:p-4 text-white" style={{ background: 'linear-gradient(to bottom, rgba(0,0,0,0.7) 0%, transparent 20%, transparent 80%, rgba(0,0,0,0.7) 100%)' }}>
+                  <div className="pointer-events-none absolute inset-0 flex flex-col justify-between p-1.5 sm:p-4 text-white" style={{ background: 'linear-gradient(to bottom, rgba(0,0,0,0.7) 0%, transparent 20%, transparent 80%, rgba(0,0,0,0.7) 100%)', zIndex: 20 }}>
                     <div className="flex justify-between items-start gap-1 sm:gap-2">
                       {event.venueName && (
                         <span className="rounded bg-black/80 px-1.5 py-0.5 font-bold tracking-wider shadow-lg" style={{ textShadow: '1px 1px 2px rgba(0,0,0,0.8)', fontSize: fSize.venue }}>
@@ -214,7 +212,7 @@ export function EventView({ eventId }: { eventId: string }) {
 
                 {/* GANADOR */}
                 {showWinner && (
-                  <div className="pointer-events-none absolute inset-0 z-20 flex items-center justify-center">
+                  <div className="pointer-events-none absolute inset-0 flex items-center justify-center" style={{ zIndex: 25 }}>
                     <div className="flex flex-col items-center rounded-xl sm:rounded-3xl border-2 sm:border-4 border-amber-400 px-6 py-4 sm:px-12 sm:py-8 shadow-2xl" style={{ background: event.winner === 'red' ? 'linear-gradient(135deg, #dc2626 0%, #7f1d1d 100%)' : 'linear-gradient(135deg, #16a34a 0%, #14532d 100%)', animation: 'winnerPop 0.5s ease-out' }}>
                       <span className="text-amber-400 font-black tracking-widest mb-1 sm:mb-2" style={{ fontSize: isMobile ? '10px' : '14px' }}>🏆 GANADOR 🏆</span>
                       <span className="text-white font-black tracking-wider text-center" style={{ fontSize: isMobile ? '20px' : '48px' }}>{event.winner === 'red' ? (event.teamRedName || 'PARTIDO ROJO') : (event.teamGreenName || 'PARTIDO VERDE')}</span>
@@ -225,7 +223,8 @@ export function EventView({ eventId }: { eventId: string }) {
                 {/* BOTÓN PANTALLA COMPLETA */}
                 <button
                   onClick={toggleFullscreen}
-                  className="absolute bottom-3 right-3 z-30 flex h-9 w-9 items-center justify-center rounded-lg bg-black/70 text-white hover:bg-black/90 transition-colors"
+                  className="absolute bottom-3 right-3 flex h-9 w-9 items-center justify-center rounded-lg bg-black/70 text-white hover:bg-black/90 transition-colors"
+                  style={{ zIndex: 30 }}
                 >
                   {isFullscreen ? <Minimize className="h-4 w-4" /> : <Maximize className="h-4 w-4" />}
                 </button>
